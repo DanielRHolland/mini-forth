@@ -64,8 +64,13 @@ function forth(print = console.log) {
     return t => exec(t.split(/[ \n\t]+/));
 }
 
+/*
+root tag to add to page:
+<div id="forthroot"></div>
 
-if (window) {
+ * */
+
+if (typeof window !== 'undefined') { // browser UI
   const style = document.createElement('style')
    style.innerHTML = `
       #forthroot * {
@@ -120,7 +125,7 @@ if (window) {
     return false;
   }
 
-} else {
+} else { // UI if NodeJS
   const readline = require('readline');
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
   const prompt = (query) => new Promise((resolve) => rl.question(query, resolve));
