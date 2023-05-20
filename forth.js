@@ -3,9 +3,6 @@ function forth(print = console.log) {
     const popNum = () => Number(s.pop());
 
     const fs = {
-        ' ' : () => {},
-        '\n' : () => {},
-        '\t' : () => {},
         '/' : () => {
                 const a2 = popNum();
                 const a1 = popNum();
@@ -18,6 +15,16 @@ function forth(print = console.log) {
             },
         '+' : () => { s.push(popNum() + popNum()) },
         '*' : () => { s.push(popNum() * popNum()) },
+        '=' : () => { s.push(popNum() === popNum()) },
+        'then' : () => {/*Doing nothing skips the token*/},
+        'if' : (initialIdx, tokens) => {
+          if (!s.pop()) {
+            let localIdx = initialIdx;
+            while (tokens[localIdx] && tokens[localIdx] !== 'then') {localIdx++}
+            return localIdx - initialIdx;
+          }
+        },
+        'not' : () => { s.push(!s.pop()) },
         '.' : () => { print(s.pop()) },
         'peek' : () => { print(s[s.length - 1]) },
         'dup' : () => { s.push(s[s.length - 1]) },
@@ -62,7 +69,13 @@ function forth(print = console.log) {
           }
         }
     }
-    return t => exec(t.split(/[ \n\t]+/));
+    return t =>
+      new Promise(
+        resolve => {
+          exec(t.split(/[ \n\t]+/).filter(x => x !== ''));
+          resolve();
+        }
+      );
 }
 
 /*
@@ -96,11 +109,17 @@ if (typeof window !== 'undefined') { // browser UI
         height: 90vh;
       }
       #forthresults {
+        height: 100%;
         margin-top: 0px;
+        overflow: clip;
+        margin: 0px;
       }
       #forthlinelabel {
         padding-top:1px;
         max-width: 3%;
+      }
+      #forthform {
+        margin-bottom: 0px;
       }
   `;
   document.head.appendChild(style);
@@ -108,7 +127,7 @@ if (typeof window !== 'undefined') { // browser UI
     <div id="forthouter">
       <form id="forthform">
         <label id="forthlinelabel" for="forthline" position="left">></label>
-        <input id="forthline" type="text" value="">
+        <input id="forthline" type="text" value="" autocomplete="off">
       </form>
       <div id='forthresultsbox'>
         <pre id="forthresults"></pre>
@@ -118,9 +137,9 @@ if (typeof window !== 'undefined') { // browser UI
   const print = x => { forthresults.innerHTML = x + '\n' + forthresults.innerHTML; };
   const m = forth(print);
   forthform.onsubmit = () => {
-    print(`> ${forthline.value}`);
-    if (forthline.value !== '') {
-      m(forthline.value);
+    const input = forthline.value;
+    if (input !== '') {
+      m(input).then(() => print(`> ${input}`));
       forthline.value = '';
     }
     return false;
