@@ -18,8 +18,9 @@ function forth(print = console.log) {
             },
         '+' : () => { s.push(popNum() + popNum()) },
         '*' : () => { s.push(popNum() * popNum()) },
-        '.' : () => print(s.pop()),
-        'peek' : () => print(s[s.length - 1]),
+        '.' : () => { print(s.pop()) },
+        'peek' : () => { print(s[s.length - 1]) },
+        'dup' : () => { s.push(s[s.length - 1]) },
         ':' : (initialIdx, tokens) => {
             let localIdx = initialIdx + 1;
             const fname = tokens[localIdx++];
