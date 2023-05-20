@@ -16,6 +16,12 @@ function forth(print = console.log) {
         '+' : () => { s.push(popNum() + popNum()) },
         '*' : () => { s.push(popNum() * popNum()) },
         '=' : () => { s.push(popNum() === popNum()) },
+        'swap' : () => {
+          const a1 = s.pop();
+          const a2 = s.pop();
+          s.push(a1);
+          s.push(a2);
+        },
         'then' : () => {/*Doing nothing skips the token*/},
         'if' : (initialIdx, tokens) => {
           if (!s.pop()) {
