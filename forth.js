@@ -147,7 +147,7 @@ if (typeof window !== 'undefined') { // browser UI
 
 } else { // UI if NodeJS
   const readline = require('readline');
-  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+  const rl = readline.createInterface({ input: process.stdin, output: process.stderr });
   const prompt = (query) => new Promise((resolve) => rl.question(query, resolve));
   const m = forth();
   (async () => {
