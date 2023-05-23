@@ -25,7 +25,6 @@ stackitem pop(stack* s) {
     if (s->size > 0) {
         s->size = s->size - 1;
         stackitem si = s->start[s->size];
-//        fprintf(stderr, "[popped %d from i=%d]", si,s->size);
         return si;
     } else {
         // tried to pop empty stack
@@ -83,7 +82,6 @@ void s_dup(stack *s) {
 
 typedef void (*stackop)(stack *);
 
-
 typedef struct {
     char* word;
     bool isscript;
@@ -109,41 +107,47 @@ const int DEFINED_FUNC_MAX_LENGTH = 1024;
 const int WORD_LEN_LIMIT = 255;
 
 int defineop(int starti, char *input) {
+    // code to be evaluated when function is called
     char *funcscript = malloc(sizeof(char) * DEFINED_FUNC_MAX_LENGTH);
     int funcscripti = 0;
+    
+    // name by which the function will be called
     char *opcode = malloc(sizeof(char) * WORD_LEN_LIMIT);
     int opcodei = 0;
+    
+    // skip ' ' and ':'
     while (input[starti] == ' ' || input[starti] == ':') {
         starti++;
     }
+
+    // get name
     while (input[starti] != ' ' && opcodei < WORD_LEN_LIMIT) {
         opcode[opcodei++] = input[starti++];
     }
     opcode[opcodei] = '\0';
+
+    // get code
     while (input[starti] != ';' && funcscripti < DEFINED_FUNC_MAX_LENGTH) {
         funcscript[funcscripti++] = input[starti++];
     }
     funcscript[funcscripti] = '\0';
+
     if (optablelen >= OPTABLE_MAX_SIZE) {
         // Error
         fprintf(stderr, "Error: optable reached max size, failed to create new user defined operation");
         exit(1);
     }
+    // add op to end of table, and increment size
     optable[optablelen].word = opcode; //{opcode, true, funcscript};
     optable[optablelen].isscript = true;
     optable[optablelen].script = funcscript;
     optable[optablelen].scriptlen = funcscripti;
-//    fprintf(stderr, "defining op '%s' with script '%s' and length '%d'", opcode, funcscript, funcscripti);
-//    fprintf(stderr, "defined op %s", optable[optablelen].word);
     optablelen++;
     return starti;
 }
 
-void donothing(stack* s) {}
-
 wordop* getop(char *word) {
     for (int i = 0; i < optablelen; i++) {
-//    fprintf(stderr, "['%s' = '%s'?]", optable[i].word, word);
         if (!strcmp(optable[i].word, word)) {
             return &optable[i];
         }
@@ -173,13 +177,9 @@ void exec(stack *s, char *word) {
         printf("%d\n", peek(s));
         return;
     }
-//    fprintf(stderr, "[looking up op %s]", word);
     wordop* op = getop(word);
     if (op) {
-
-//    fprintf(stderr, "[op %s]", op->word);
         if (op->isscript) {
-//            fprintf(stderr, "eval: %s (len: %d)", op->script, op->scriptlen);
             eval(s, op->scriptlen, op->script);
         } else {
             op->op(s);
@@ -187,24 +187,19 @@ void exec(stack *s, char *word) {
         return;
     }
     if (isnumber(word)) {
- //   fprintf(stderr, "[number %s]", word);
         push(s, atoi(word));
         return;
     }
 }
 
-//void eval(int scriptlen, char* script) {
 void eval(stack* s, int len, char* line) {
     char word[WORD_LEN_LIMIT];
         int wordi = 0;
         for (int i = 0; i < len; i++) {
-
             // end of input is \n, char after end of input is \0
             if (line[i] == '\0') {
                 return;
             }
-
-//            printf("i%d - %c;", i, line[i]);
             if (line[i] != ' ' &&
                     line[i] != '\n' && wordi < WORD_LEN_LIMIT - 1) {
                 if (line[i] == ':') {
@@ -226,55 +221,10 @@ void eval(stack* s, int len, char* line) {
 
 int main(int argc, char** argv) {
     stack* s = newstack();
-
-    for (int i = 1; i < argc; i++) {
-        exec(s, argv[i]);
-    }
-
-//    char ch;
-//    char word[WORD_LEN_LIMIT];
-//    int wordi;
-//    while (read(STDIN_FILENO, &ch, 1) > 0) {
-//        if (ch != ' ' && wordi < WORD_LEN_LIMIT) {
-//            word[wordi++] = ch;
-//        } else {
-//            word[wordi] = '\0';
-//            exec(s, word);
-//            wordi = 0;
-//        }
-//    }
-//
     char *line = NULL;
     size_t len = 0;
     ssize_t read;
-   
     while ((read = getline(&line, &len, stdin)) != -1) {
- //               printf("%s",line);
- //               printf("%d",(int)len);
         eval(s, len, line);
     }
-
- //   push(s, 8);
- //   push(s, 9);
-
- //   printf("%d\n", pop(s));
- //   printf("%d\n", pop(s));
- //   printf("%d\n", pop(s));
- //   printf("%d\n", pop(s));
- //   push(s, 8);
- //   push(s, 9);
- //   add(s);
- //   dup(s);
- //   printf("%d\n", pop(s));
- //   push(s, 1);
- //   sub(s);
- //   printf("%d\n", peek(s));
- //   printf("%d\n", pop(s));
-
- //   stackop op = getop("+");
- //   if (op) {
- //       op(s);
- //   }
-
-
 }
