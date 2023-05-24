@@ -100,11 +100,21 @@ void eq(stack *s) {
 }
 
 void add(stack *s) {
-
     int x = pop(s);
     int y = pop(s);
- //   fprintf(stderr, "adding %d + %d",x,y);
     push(s, x + y);
+}
+
+void mult(stack *s) {
+    int x = pop(s);
+    int y = pop(s);
+    push(s, x * y);
+}
+
+void s_div(stack *s) {
+    int x = pop(s);
+    int y = pop(s);
+    push(s, y / x);
 }
 
 void sub(stack *s) {
@@ -137,6 +147,8 @@ typedef struct {
 wordop optable[OPTABLE_MAX_SIZE] = {
     {"+", false, add},
     {"-", false, sub},
+    {"*", false, mult},
+    {"/", false, s_div},
     {"dup", false, s_dup},
     {"dump", false, dump},
     {"not", false, not},
@@ -146,7 +158,7 @@ wordop optable[OPTABLE_MAX_SIZE] = {
     {"over", false, over},
     {"rot", false, rot},
 };
-int optablelen = 10;
+int optablelen = 12;
 
 const int DEFINED_FUNC_MAX_LENGTH = 1024;
 const int WORD_LEN_LIMIT = 255;
@@ -177,6 +189,7 @@ int defineop(int starti, char *input) {
     }
     funcscript[funcscripti] = '\0';
 
+    // optable bounds check
     if (optablelen >= OPTABLE_MAX_SIZE) {
         // Error
         fprintf(stderr, "Error: optable reached max size, failed to create new user defined operation");
