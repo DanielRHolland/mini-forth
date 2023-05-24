@@ -60,6 +60,45 @@ void push(stack *s, stackitem si) {
     }
 }
 
+void not(stack *s) {
+    int x = pop(s);
+    push(s, !x);
+}
+
+void drop(stack *s) {
+    pop(s);
+}
+
+void over(stack *s) {
+    int x = pop(s);
+    int y = pop(s);
+    push(s, y);
+    push(s, x);
+    push(s, y);
+}
+
+void rot(stack *s) {
+    int x = pop(s);
+    int y = pop(s);
+    int z = pop(s);
+    push(s, y);
+    push(s, x);
+    push(s, z);
+}
+
+void swap(stack *s) {
+    int x = pop(s);
+    int y = pop(s);
+    push(s, x);
+    push(s, y);
+}
+
+void eq(stack *s) {
+    int x = pop(s);
+    int y = pop(s);
+    push(s, x == y);
+}
+
 void add(stack *s) {
 
     int x = pop(s);
@@ -100,8 +139,14 @@ wordop optable[OPTABLE_MAX_SIZE] = {
     {"-", false, sub},
     {"dup", false, s_dup},
     {"dump", false, dump},
+    {"not", false, not},
+    {"=", false, eq},
+    {"swap", false, swap},
+    {"drop", false, drop},
+    {"over", false, over},
+    {"rot", false, rot},
 };
-int optablelen = 4;
+int optablelen = 10;
 
 const int DEFINED_FUNC_MAX_LENGTH = 1024;
 const int WORD_LEN_LIMIT = 255;
@@ -138,7 +183,7 @@ int defineop(int starti, char *input) {
         exit(1);
     }
     // add op to end of table, and increment size
-    optable[optablelen].word = opcode; //{opcode, true, funcscript};
+    optable[optablelen].word = opcode;
     optable[optablelen].isscript = true;
     optable[optablelen].script = funcscript;
     optable[optablelen].scriptlen = funcscripti;
@@ -211,7 +256,26 @@ void eval(stack* s, int len, char* line) {
             } else { // end of word
                 if (wordi > 0) { // don't exec an empty string
                     word[wordi] = '\0';
-                    exec(s, word);
+                    if (!strcmp(word, "if")) {
+                        stackitem predicate = pop(s);
+                        if (!predicate) {
+                            while (len > i &&
+                                    !(
+                                        line[i-3] == 't' &&
+                                        line[i-2] == 'h' &&
+                                        line[i-1] == 'e' &&
+                                        line[i] == 'n'
+                                     )) {
+                                i++;
+                            }
+                            //      if (len < i + 3) {
+                            //          // error no 'then' before EOL
+                            //          exit(1);
+                            //      }
+                        }
+                    } else {
+                        exec(s, word);
+                    }
                 }
                 // start new word
                 wordi = 0;
