@@ -22,6 +22,24 @@ function forth(print = console.log) {
           s.push(a1);
           s.push(a2);
         },
+        'drop' : () => {
+          s.pop();
+        },
+        'over' : () => {
+          const a1 = s.pop();
+          const a2 = s.pop();
+          s.push(a2);
+          s.push(a1);
+          s.push(a2);
+        },
+        'rot' : () => {
+          const a1 = s.pop();
+          const a2 = s.pop();
+          const a3 = s.pop();
+          s.push(a2);
+          s.push(a1);
+          s.push(a3);
+        },
         'then' : () => {/*Doing nothing skips the token*/},
         'if' : (initialIdx, tokens) => {
           if (!s.pop()) {
@@ -33,7 +51,11 @@ function forth(print = console.log) {
         'not' : () => { s.push(!s.pop()) },
         '.' : () => { print(s.pop()) },
         'peek' : () => { print(s[s.length - 1]) },
-        'dup' : () => { s.push(s[s.length - 1]) },
+        'dup' : () => {
+          const a = s.pop();
+          s.push(a);
+          s.push(a);
+        },
         ':' : (initialIdx, tokens) => {
             let localIdx = initialIdx + 1;
             const fname = tokens[localIdx++];
@@ -46,19 +68,6 @@ function forth(print = console.log) {
             }
             return localIdx - initialIdx; // numItemsSkipped
         },
-        's' : () => print(JSON.stringify(s)),
-        'sum' : () => {
-          let total = 0;
-          while (s.length > 0) {
-            total += popNum();
-          }
-          s.push(total);
-        },
-        '(' : (initialIdx, tokens) => {
-          let localIdx = initialIdx + 1;
-          while (tokens[localIdx] !== ')') { localIdx++ }
-          return localIdx - initialIdx;
-        }
     }
 
     function exec(tokens) {
