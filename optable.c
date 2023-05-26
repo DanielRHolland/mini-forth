@@ -17,7 +17,7 @@ static void popout(stack *s);
 static void peekout(stack *s);
 
 static void ifdirective(stack *s, int len, char* line, int* i);
-static void defineopdirective(stack *s, int len, char* line, int* i);
+static void defineop(stack *s, int len, char* line, int* i);
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wincompatible-function-pointer-types"
@@ -37,51 +37,10 @@ static wordop optable[OPTABLE_MAX_SIZE] = {
     {"over", builtin, {over}},
     {"rot", builtin, {rot}},
     {"if", directive, {ifdirective}},
-    {":", directive, {defineopdirective}},
+    {":", directive, {defineop}},
 };
 static int optablelen = 15;
 #pragma clang diagnostic pop
-
-int defineop(int starti, char *input) {
-    // name by which the function will be called
-    char *opcode = malloc(sizeof(char) * WORD_LEN_LIMIT);
-    int opcodei = 0;
-
-    // code to be evaluated when function is called
-    char *funcscript = malloc(sizeof(char) * DEFINED_FUNC_MAX_LENGTH);
-    int funcscripti = 0;
-    
-    // skip ' ' and ':'
-    while (input[starti] == ' ' || input[starti] == ':') {
-        starti++;
-    }
-
-    // get name
-    while (input[starti] != ' ' && opcodei < WORD_LEN_LIMIT) {
-        opcode[opcodei++] = input[starti++];
-    }
-    opcode[opcodei] = '\0';
-
-    // get code
-    while (input[starti] != ';' && funcscripti < DEFINED_FUNC_MAX_LENGTH) {
-        funcscript[funcscripti++] = input[starti++];
-    }
-    funcscript[funcscripti] = '\0';
-
-    // optable bounds check 
-    if (optablelen >= OPTABLE_MAX_SIZE) {
-        // Error
-        fprintf(stderr, "Error: optable reached max size, failed to create new user defined operation");
-        exit(1);
-    }
-    // add op to end of table, and increment size
-    optable[optablelen].word = opcode;
-    optable[optablelen].optype = script;
-    optable[optablelen].script = funcscript;
-    optable[optablelen].scriptlen = funcscripti;
-    optablelen++;
-    return starti;
-}
 
 wordop* getop(char *word) {
     for (int i = 0; i < optablelen; i++) {
@@ -190,6 +149,56 @@ static void ifdirective(stack *s, int len, char* line, int* i) {
     }
 }
 
-static void defineopdirective(stack *s, int len, char* line, int* i) {
-    *i = defineop(*i, line);
+
+/**
+ * defineop reads a function identifier, followed by the commands to run when the function
+ *      is called, stopping when a semicolon is reached.
+ *      Reading is done from the input string.
+ *
+ * returns new position of input index
+ *
+ */
+static void defineop(stack* s_IGNORED, int len_IGNORED, char *input, int* starti) {
+    // value easier to deal with (than pointer)
+    int i = *starti;
+    // name by which the function will be called
+    char *opcode = malloc(sizeof(char) * WORD_LEN_LIMIT);
+    int opcodei = 0;
+
+    // code to be evaluated when function is called
+    char *funcscript = malloc(sizeof(char) * DEFINED_FUNC_MAX_LENGTH);
+    int funcscripti = 0;
+    
+    // skip ' ' and ':'
+    while (input[i] == ' ' || input[i] == ':') {
+        i++;
+    }
+
+    // get name
+    while (input[i] != ' ' && opcodei < WORD_LEN_LIMIT) {
+        opcode[opcodei++] = input[i++];
+    }
+    opcode[opcodei] = '\0';
+
+    // get code
+    while (input[i] != ';' && funcscripti < DEFINED_FUNC_MAX_LENGTH) {
+        funcscript[funcscripti++] = input[i++];
+    }
+    funcscript[funcscripti] = '\0';
+
+    // optable bounds check 
+    if (optablelen >= OPTABLE_MAX_SIZE) {
+        // Error
+        fprintf(stderr, "Error: optable reached max size, failed to create new user defined operation");
+        exit(1);
+    }
+    // add op to end of table, and increment size
+    optable[optablelen].word = opcode;
+    optable[optablelen].optype = script;
+    optable[optablelen].script = funcscript;
+    optable[optablelen].scriptlen = funcscripti;
+    optablelen++;
+
+    // move read position forwards
+    *starti = i;
 }
