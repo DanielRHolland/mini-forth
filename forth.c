@@ -47,24 +47,24 @@ void exec(stack *s, char *word, int len, char* line, int* i) {
 }
 
 void eval(stack* s, int len, char* line) {
-        char word[WORD_LEN_LIMIT];
-        int wordi = 0;
-        for (int i = 0; i < len; i++) {
-            if (notdelim(line[i]) && wordi < WORD_LEN_LIMIT - 1) {
-                word[wordi++] = line[i];
-            } else { // end of word
-                if (wordi > 0) { // don't exec an empty string
-                    word[wordi] = '\0';
-                    exec(s, word, len, line, &i);
-                }
-                // start new word
-                wordi = 0;
+    char word[WORD_LEN_LIMIT];
+    int wordi = 0;
+    for (int i = 0; i < len; i++) {
+        if (notdelim(line[i]) && wordi < WORD_LEN_LIMIT - 1) {
+            word[wordi++] = line[i];
+        } else { // end of word
+            if (wordi > 0) { // don't exec an empty string
+                word[wordi] = '\0';
+                exec(s, word, len, line, &i);
             }
-            // end of input string
-            if (line[i] == '\0') {
-                return;
-            }
+            // start new word
+            wordi = 0;
         }
+        // end of input string
+        if (line[i] == '\0') {
+            return;
+        }
+    }
 }
 
 int main(int argc, char** argv) {
