@@ -27,13 +27,6 @@ char isnumber(char *text) {
 void eval(stack* s, int len, char* line);
 
 void exec(stack *s, char *word) {
-    if (!strcmp(word, "pop") || !strcmp(word, ".")) {
-        printf("%d\n", pop(s));
-        return;
-    } else if (!strcmp(word, "peek")) {
-        printf("%d\n", peek(s));
-        return;
-    } 
     wordop* op = getop(word);
     if (op) {
         if (op->isscript) {

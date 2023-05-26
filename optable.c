@@ -1,7 +1,6 @@
 #include "optable.h"
 #include <string.h>
 
-static void dump(stack* s);
 static void not(stack *s);
 static void drop(stack *s);
 static void over(stack *s);
@@ -13,14 +12,17 @@ static void mult(stack *s);
 static void s_div(stack *s);
 static void sub(stack *s);
 static void dup(stack *s);
+static void popout(stack *s);
+static void peekout(stack *s);
 
 static wordop optable[OPTABLE_MAX_SIZE] = {
+    {".", false, popout},
+    {"peek", false, peekout},
     {"+", false, add},
     {"-", false, sub},
     {"*", false, mult},
     {"/", false, s_div},
     {"dup", false, dup},
-    {"dump", false, dump},
     {"not", false, not},
     {"=", false, eq},
     {"swap", false, swap},
@@ -28,7 +30,7 @@ static wordop optable[OPTABLE_MAX_SIZE] = {
     {"over", false, over},
     {"rot", false, rot},
 };
-static int optablelen = 12;
+static int optablelen = 13;
 
 int defineop(int starti, char *input) {
     // name by which the function will be called
@@ -81,13 +83,6 @@ wordop* getop(char *word) {
 }
 
 /* Implementations of builtin functions */
-
-static void dump(stack* s) {
-    for (int i = 0; i < s->size; i++) {
-        printf("%d,", s->start[i]);
-    }
-    printf("\n");
-}
 
 static void not(stack *s) {
     int x = pop(s);
@@ -156,4 +151,14 @@ static void dup(stack *s) {
     int x = pop(s);
     push(s, x);
     push(s, x);
+}
+
+static void popout(stack *s) {
+    printf("%d\n", pop(s));
+}
+
+static void peekout(stack *s) {
+    int x = pop(s);
+    push(s, x);
+    printf("%d\n", x);
 }
