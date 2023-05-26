@@ -10,11 +10,19 @@
 #define WORD_LEN_LIMIT 255
 
 typedef void (*stackop)(stack *);
+typedef void (*directiveop)(stack *, int len, char* line, int* i);
+
+typedef enum {
+    directive = 0,
+    builtin = 1,
+    script = 2,
+} optype;
 
 typedef struct {
     char* word;
-    bool isscript;
+    optype optype;
     union {
+        directiveop directive;
         stackop op;
         struct {
             char* script;

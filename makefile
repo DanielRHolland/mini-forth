@@ -1,5 +1,5 @@
 build:
-	gcc forth.c optable.c stack.c -o forth
+	clang forth.c optable.c stack.c -o ./forth -Wall
 run:
 	./forth
 run-rlwrap:

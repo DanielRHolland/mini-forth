@@ -26,59 +26,42 @@ char isnumber(char *text) {
 
 void eval(stack* s, int len, char* line);
 
-void exec(stack *s, char *word) {
+void exec(stack *s, char *word, int len, char* line, int* i) {
     wordop* op = getop(word);
     if (op) {
-        if (op->isscript) {
+        if (op->optype == script) {
             eval(s, op->scriptlen, op->script);
-        } else {
+        } else if (op->optype == builtin) {
             op->op(s);
+        } else if (op->optype == directive) {
+            op->directive(s, len, line, i);
         }
-        return;
-    }
-    if (isnumber(word)) {
+    } else if (isnumber(word)) {
         push(s, atoi(word));
-        return;
     }
 }
 
+bool notdelim(char c) {
+    return c != ' ' && c != '\n' && c != '\t' && c != '\0';
+}
+
 void eval(stack* s, int len, char* line) {
-    char word[WORD_LEN_LIMIT];
+        char word[WORD_LEN_LIMIT];
         int wordi = 0;
         for (int i = 0; i < len; i++) {
-            // end of input is \n, char after end of input is \0
-            if (line[i] == '\0') {
-                return;
-            }
-            if (line[i] != ' ' &&
-                    line[i] != '\n' && wordi < WORD_LEN_LIMIT - 1) {
-                if (line[i] == ':') {
-                    i = defineop(i, line);
-                    wordi = 0;
-                } else {
-                    word[wordi++] = line[i];
-                }
+            if (notdelim(line[i]) && wordi < WORD_LEN_LIMIT - 1) {
+                word[wordi++] = line[i];
             } else { // end of word
                 if (wordi > 0) { // don't exec an empty string
                     word[wordi] = '\0';
-                    if (!strcmp(word, "if")) {
-                        stackitem predicate = pop(s);
-                        if (!predicate) {
-                            while (len > i && !(
-                                        line[i-3] == 't' &&
-                                        line[i-2] == 'h' &&
-                                        line[i-1] == 'e' &&
-                                        line[i] == 'n'
-                                        )) {
-                                i++;
-                            }
-                        }
-                    } else {
-                        exec(s, word);
-                    }
+                    exec(s, word, len, line, &i);
                 }
                 // start new word
                 wordi = 0;
+            }
+            // end of input string
+            if (line[i] == '\0') {
+                return;
             }
         }
 }

@@ -1,4 +1,5 @@
 #include "optable.h"
+#include <stdio.h>
 #include <string.h>
 
 static void not(stack *s);
@@ -15,22 +16,31 @@ static void dup(stack *s);
 static void popout(stack *s);
 static void peekout(stack *s);
 
+static void ifdirective(stack *s, int len, char* line, int* i);
+static void defineopdirective(stack *s, int len, char* line, int* i);
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wincompatible-function-pointer-types"
+// clang seems to not realise that the union can contain fp types beyond the first
 static wordop optable[OPTABLE_MAX_SIZE] = {
-    {".", false, popout},
-    {"peek", false, peekout},
-    {"+", false, add},
-    {"-", false, sub},
-    {"*", false, mult},
-    {"/", false, s_div},
-    {"dup", false, dup},
-    {"not", false, not},
-    {"=", false, eq},
-    {"swap", false, swap},
-    {"drop", false, drop},
-    {"over", false, over},
-    {"rot", false, rot},
+    {".", builtin, {popout}},
+    {"peek", builtin, {peekout}},
+    {"+", builtin, {add}},
+    {"-", builtin, {sub}},
+    {"*", builtin, {mult}},
+    {"/", builtin, {s_div}},
+    {"dup", builtin, {dup}},
+    {"not", builtin, {not}},
+    {"=", builtin, {eq}},
+    {"swap", builtin, {swap}},
+    {"drop", builtin, {drop}},
+    {"over", builtin, {over}},
+    {"rot", builtin, {rot}},
+    {"if", directive, {ifdirective}},
+    {":", directive, {defineopdirective}},
 };
-static int optablelen = 13;
+static int optablelen = 15;
+#pragma clang diagnostic pop
 
 int defineop(int starti, char *input) {
     // name by which the function will be called
@@ -66,7 +76,7 @@ int defineop(int starti, char *input) {
     }
     // add op to end of table, and increment size
     optable[optablelen].word = opcode;
-    optable[optablelen].isscript = true;
+    optable[optablelen].optype = script;
     optable[optablelen].script = funcscript;
     optable[optablelen].scriptlen = funcscripti;
     optablelen++;
@@ -161,4 +171,25 @@ static void peekout(stack *s) {
     int x = pop(s);
     push(s, x);
     printf("%d\n", x);
+}
+
+
+/* Directives */
+
+static void ifdirective(stack *s, int len, char* line, int* i) {
+    stackitem predicate = pop(s);
+    if (!predicate) {
+        while (len > *i && !(
+                    line[*i-3] == 't' &&
+                    line[*i-2] == 'h' &&
+                    line[*i-1] == 'e' &&
+                    line[*i] == 'n'
+                    )) {
+            (*i)++;
+        }
+    }
+}
+
+static void defineopdirective(stack *s, int len, char* line, int* i) {
+    *i = defineop(*i, line);
 }
