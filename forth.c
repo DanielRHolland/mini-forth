@@ -12,16 +12,17 @@
 #include "optable.h"
 #endif
 
-//https://stackoverflow.com/a/58585995
-char isnumber(char *text) {
-    int j;
-    j = strlen(text);
-    while(j--) {
-        if(text[j] >= '0' && text[j] <= '9')
-            continue;
-        return 0;
+bool isnumber(char *text) {
+    for(int j = strlen(text); j > 0; j--) {
+        if(text[j] < '0' && text[j] > '9') {
+            return false;
+        }
     }
-    return 1;
+    return true;
+}
+
+bool notdelim(char c) {
+    return c != ' ' && c != '\n' && c != '\t' && c != '\0';
 }
 
 void eval(stack* s, int len, char* line);
@@ -29,20 +30,20 @@ void eval(stack* s, int len, char* line);
 void exec(stack *s, char *word, int len, char* line, int* i) {
     wordop* op = getop(word);
     if (op) {
-        if (op->optype == script) {
-            eval(s, op->scriptlen, op->script);
-        } else if (op->optype == builtin) {
-            op->op(s);
-        } else if (op->optype == directive) {
-            op->directive(s, len, line, i);
+        switch (op->optype) {
+            case script:
+                eval(s, op->scriptlen, op->script);
+                break;
+            case builtin:
+                op->op(s);
+                break;
+            case directive:
+                op->directive(s, len, line, i);
+                break;
         }
     } else if (isnumber(word)) {
         push(s, atoi(word));
     }
-}
-
-bool notdelim(char c) {
-    return c != ' ' && c != '\n' && c != '\t' && c != '\0';
 }
 
 void eval(stack* s, int len, char* line) {
