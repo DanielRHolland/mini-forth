@@ -132,6 +132,7 @@ if (typeof window !== 'undefined') { // browser UI
       #forthlinelabel {
         padding-top:1px;
         max-width: 3%;
+        float: left;
       }
       #forthform {
         margin-bottom: 0px;
