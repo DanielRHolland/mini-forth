@@ -112,6 +112,8 @@ if (typeof window !== 'undefined') { // browser UI
       #forthouter {
         cursor: text;
         border: solid thin black;
+        height: 90vh;
+        overflow: scroll;
       }
       #forthline {
         width: 97%;
@@ -121,10 +123,8 @@ if (typeof window !== 'undefined') { // browser UI
         outline: none;
       }
       #forthresultsbox {
-        height: 90vh;
       }
       #forthresults {
-        height: 100%;
         margin-top: 0px;
         overflow: clip;
         margin: 0px;
@@ -141,21 +141,25 @@ if (typeof window !== 'undefined') { // browser UI
   document.head.appendChild(style);
   forthroot.innerHTML = `
     <div id="forthouter">
-      <form id="forthform">
-        <label id="forthlinelabel" for="forthline" position="left">></label>
-        <input id="forthline" type="text" value="" autocomplete="off">
-      </form>
       <div id='forthresultsbox'>
         <pre id="forthresults"></pre>
       </div>
+      <form id="forthform">
+        <label id="forthlinelabel" for="forthline" position="left">>&nbsp;</label>
+        <input id="forthline" type="text" value="" autocomplete="off">
+      </form>
     </div>`
   forthouter.onclick = () => forthline.focus();
-  const print = x => { forthresults.innerHTML = x + '\n' + forthresults.innerHTML; };
+  const print = x => {
+    forthresults.innerHTML = forthresults.innerHTML + x + '\n' ;
+    forthouter.scrollTo(0, forthouter.scrollHeight);
+  };
   const m = forth(print);
   forthform.onsubmit = () => {
     const input = forthline.value;
     if (input !== '') {
-      m(input).then(() => print(`> ${input}`));
+      print(`> ${input}`);
+      m(input);
       forthline.value = '';
     }
     return false;
