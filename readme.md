@@ -9,7 +9,6 @@ If you also have rlwrap installed, you can run `make run-rlwrap`, to get complet
 _Be aware:_
 
  - Neither implementation is finished
- - The instruction sets have _different_ missing features
- - This is a toy language, not intended for serious use
-
+ - The implementations have some subtle differences
+ - This is a toy, not intended for serious use
 
