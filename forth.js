@@ -48,7 +48,7 @@ function forth(print = console.log) {
             return localIdx - initialIdx;
           }
         },
-        'not' : () => { s.push(!s.pop()) },
+        'not' : () => { s.push(!popNum()) },
         '.' : () => { print(s.pop()) },
         'peek' : () => { print(s[s.length - 1]) },
         'dup' : () => {
