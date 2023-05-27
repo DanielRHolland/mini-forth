@@ -15,6 +15,7 @@ static void sub(stack *s);
 static void dup(stack *s);
 static void popout(stack *s);
 static void peekout(stack *s);
+static void donothing(stack *s);
 
 static void ifdirective(stack *s, int len, char* line, int* i);
 static void defineop(stack *s, int len, char* line, int* i);
@@ -36,10 +37,11 @@ static wordop optable[OPTABLE_MAX_SIZE] = {
     {"drop", builtin, {drop}},
     {"over", builtin, {over}},
     {"rot", builtin, {rot}},
+    {"then", builtin, {donothing}},
     {"if", directive, {ifdirective}},
     {":", directive, {defineop}},
 };
-static int optablelen = 15;
+static int optablelen = 16;
 #pragma clang diagnostic pop
 
 wordop* getop(char *word) {
@@ -132,21 +134,26 @@ static void peekout(stack *s) {
     printf("%d\n", x);
 }
 
+static void donothing(stack *s) {
+    // Do nothing at all (i.e. discard token)
+}
 
 /* Directives */
 
-static void ifdirective(stack *s, int len, char* line, int* i) {
+static void ifdirective(stack *s, int len, char* line, int* starti) {
+    int i = *starti;
     stackitem predicate = pop(s);
     if (!predicate) {
-        while (len > *i && !(
-                    line[*i-3] == 't' &&
-                    line[*i-2] == 'h' &&
-                    line[*i-1] == 'e' &&
-                    line[*i] == 'n'
+        while (len > i && i >= 4 && !(
+                    line[i-4] == 't' &&
+                    line[i-3] == 'h' &&
+                    line[i-2] == 'e' &&
+                    line[i-1] == 'n'
                     )) {
-            (*i)++;
+            i++;
         }
     }
+    *starti = i;
 }
 
 
