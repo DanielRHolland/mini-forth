@@ -42,7 +42,7 @@ function forth(print = console.log) {
         },
         'then' : () => {/*Doing nothing skips the token*/},
         'if' : (initialIdx, tokens) => {
-          if (!s.pop()) {
+          if (!popNum()) {
             let localIdx = initialIdx;
             while (tokens[localIdx] && tokens[localIdx] !== 'then') {localIdx++}
             return localIdx - initialIdx;
