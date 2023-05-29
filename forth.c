@@ -40,6 +40,14 @@ void exec(stack *s, char *word, int len, char* line, int* i) {
             case directive:
                 op->directive(s, len, line, i);
                 break;
+            case compiled:
+                for (int i = 0; i < op->oplistlen; i++) {
+                    if (op->oplist[i].isliteral) {
+                        stack_push(s, op->oplist[i].literal);
+                    } else {
+                        (op->oplist[i].stackop)(s);
+                    }
+                }
         }
     } else if (isnumber(word)) {
         stack_push(s, atoi(word));
@@ -67,8 +75,12 @@ void eval(stack* s, int len, char* line) {
     }
 }
 
+
 int main(int argc, char** argv) {
+    optable_init();
+
     stack* s = stack_new();
+
     char *line = NULL;
     size_t len = 0;
     ssize_t read;

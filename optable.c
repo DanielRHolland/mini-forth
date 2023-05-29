@@ -1,5 +1,7 @@
 #include "optable.h"
+#include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 static void not(stack *s);
@@ -11,6 +13,11 @@ static void eq(stack *s);
 static void add(stack *s);
 static void mult(stack *s);
 static void s_div(stack *s);
+static void mod(stack *s);
+static void negate(stack *s);
+static void s_abs(stack *s);
+static void max(stack *s);
+static void min(stack *s);
 static void sub(stack *s);
 static void dup(stack *s);
 static void popout(stack *s);
@@ -31,6 +38,11 @@ static wordop optable[OPTABLE_MAX_SIZE] = {
     {"-", builtin, {sub}},
     {"*", builtin, {mult}},
     {"/", builtin, {s_div}},
+    {"negate", builtin, {negate}},
+    {"abs", builtin, {s_abs}},
+    {"mod", builtin, {mod}},
+    {"max", builtin, {max}},
+    {"min", builtin, {min}},
     {"dup", builtin, {dup}},
     {"not", builtin, {not}},
     {"=", builtin, {eq}},
@@ -46,8 +58,46 @@ static wordop optable[OPTABLE_MAX_SIZE] = {
     {"if", directive, {ifdirective}},
     {":", directive, {defineop}},
 };
-static int optablelen = 20;
+static int optablelen = 25;
 #pragma clang diagnostic pop
+
+compileditem* compilewords(int len, char** script) {
+    compileditem* oplist = malloc(sizeof(compileditem) * len);
+    for (int i = 0; i < len; i++) {
+        wordop* wordop = getop(script[i]);
+        if (wordop) {
+            oplist[i].isliteral = false;
+            oplist[i].stackop = wordop->op;
+        } else {
+            oplist[i].isliteral = true;
+            oplist[i].literal = atoi(script[i]);
+        }
+    }
+    return oplist;
+}
+
+void optable_init() {
+
+    optable[optablelen].word = "nip";
+    optable[optablelen].optype = compiled;
+    int oplistlen = 2;
+    optable[optablelen].oplistlen = oplistlen;
+    char* ws[] = {"swap", "drop"};
+    compileditem* oplist = compilewords(2, ws);
+    optable[optablelen].oplist = oplist;
+    optablelen++;
+
+
+    optable[optablelen].word = "incr";
+    optable[optablelen].optype = compiled;
+    oplistlen = 2;
+    optable[optablelen].oplistlen = oplistlen;
+    char* ws2[] = {"1", "+"};
+    oplist = compilewords(2, ws2);
+    optable[optablelen].oplist = oplist;
+    optablelen++;
+
+}
 
 wordop* getop(char *word) {
     for (int i = 0; i < optablelen; i++) {
@@ -117,6 +167,12 @@ static void s_div(stack *s) {
     stack_push(s, y / x);
 }
 
+static void mod(stack *s) {
+    int x = stack_pop(s);
+    int y = stack_pop(s);
+    stack_push(s, y % x);
+}
+
 static void sub(stack *s) {
     int x = stack_pop(s);
     int y = stack_pop(s);
@@ -145,6 +201,35 @@ static void donothing(stack *s) {
 
 static void depth(stack *s) {
     stack_push(s, stack_depth(s));
+}
+
+static void max(stack *s) {
+    int x = stack_pop(s);
+    int y = stack_pop(s);
+    if (x > y) {
+        stack_push(s, x);
+    } else {
+        stack_push(s, y);
+    }
+}
+
+static void min(stack *s) {
+    int x = stack_pop(s);
+    int y = stack_pop(s);
+    if (x < y) {
+        stack_push(s, x);
+    } else {
+        stack_push(s, y);
+    }
+}
+
+static void negate(stack *s) {
+    stack_push(s, 0 - stack_pop(s));
+}
+
+static void s_abs(stack *s) {
+    int x = stack_pop(s);
+    stack_push(s, x < 0 ? 0 - x : x);
 }
 
 /* Directives */

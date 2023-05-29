@@ -12,10 +12,19 @@
 typedef void (*stackop)(stack *);
 typedef void (*directiveop)(stack *, int len, char* line, int* i);
 
+typedef struct {
+    bool isliteral;
+    union {
+        stackop stackop;
+        stackitem literal;
+    };
+} compileditem;
+
 typedef enum {
     directive = 0,
     builtin = 1,
     script = 2,
+    compiled = 3,
 } optype;
 
 typedef struct {
@@ -28,6 +37,10 @@ typedef struct {
             char* script;
             int scriptlen;
         };
+        struct {
+            compileditem* oplist;
+            int oplistlen;
+        };
     };
 } wordop;
 
@@ -36,5 +49,7 @@ typedef struct {
  *      if none exist, returns 0
  */
 wordop* getop(char *word);
+
+void optable_init();
 
 #endif //OPTABLE_H

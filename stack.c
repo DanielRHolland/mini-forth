@@ -61,6 +61,9 @@ void stack_roll(stack *s) {
             s->start[i] = s->start[i+1];
         }
         s->start[i] = newtop;
+    } else {
+        // no item found
+        stack_push(s, 0);
     }
 }
 

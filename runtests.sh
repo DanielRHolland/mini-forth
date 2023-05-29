@@ -4,6 +4,11 @@ if [ -z "$FORTH_CMD" ] ; then
     FORTH_CMD="./forth"
 fi
 
+dir='./tests'
+if [ "$#" -gt 0 ] ; then
+    dir="$1"
+fi
+
 n=0
 failed=0
 
@@ -27,7 +32,7 @@ runtest () {
     fi
 }
 
-for f in ./tests/*; do
+for f in $dir/*.forth; do
     n="$(expr "$n" + 1)"
     runtest "$f"
 done
