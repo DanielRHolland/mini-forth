@@ -1,0 +1,4 @@
+INPUT
+1 3 + .
+OUTPUT
+4
