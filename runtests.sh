@@ -37,6 +37,11 @@ for f in $dir/*.forth; do
     runtest "$f"
 done
 
+for f in $dir/*/*.forth; do
+    n="$(expr "$n" + 1)"
+    runtest "$f"
+done
+
 if [ "0" -eq "$failed" ]; then
     echo "All $n tests passed" >&2
     exit 0
