@@ -16,6 +16,7 @@ static void dup(stack *s);
 static void popout(stack *s);
 static void peekout(stack *s);
 static void donothing(stack *s);
+static void depth(stack *s);
 
 static void ifdirective(stack *s, int len, char* line, int* i);
 static void defineop(stack *s, int len, char* line, int* i);
@@ -37,11 +38,15 @@ static wordop optable[OPTABLE_MAX_SIZE] = {
     {"drop", builtin, {drop}},
     {"over", builtin, {over}},
     {"rot", builtin, {rot}},
+    {"pick", builtin, {stack_pick}},
+    {"roll", builtin, {stack_roll}},
     {"then", builtin, {donothing}},
+    {"depth", builtin, {depth}},
+    {".s", builtin, {stack_printall}},
     {"if", directive, {ifdirective}},
     {":", directive, {defineop}},
 };
-static int optablelen = 16;
+static int optablelen = 20;
 #pragma clang diagnostic pop
 
 wordop* getop(char *word) {
@@ -56,81 +61,81 @@ wordop* getop(char *word) {
 /* Implementations of builtin functions */
 
 static void not(stack *s) {
-    int x = pop(s);
-    push(s, !x);
+    int x = stack_pop(s);
+    stack_push(s, !x);
 }
 
 static void drop(stack *s) {
-    pop(s);
+    stack_pop(s);
 }
 
 static void over(stack *s) {
-    int x = pop(s);
-    int y = pop(s);
-    push(s, y);
-    push(s, x);
-    push(s, y);
+    int x = stack_pop(s);
+    int y = stack_pop(s);
+    stack_push(s, y);
+    stack_push(s, x);
+    stack_push(s, y);
 }
 
 static void rot(stack *s) {
-    int x = pop(s);
-    int y = pop(s);
-    int z = pop(s);
-    push(s, y);
-    push(s, x);
-    push(s, z);
+    int x = stack_pop(s);
+    int y = stack_pop(s);
+    int z = stack_pop(s);
+    stack_push(s, y);
+    stack_push(s, x);
+    stack_push(s, z);
 }
 
 static void swap(stack *s) {
-    int x = pop(s);
-    int y = pop(s);
-    push(s, x);
-    push(s, y);
+    int x = stack_pop(s);
+    int y = stack_pop(s);
+    stack_push(s, x);
+    stack_push(s, y);
 }
 
 static void eq(stack *s) {
-    int x = pop(s);
-    int y = pop(s);
-    push(s, x == y);
+    int x = stack_pop(s);
+    int y = stack_pop(s);
+    stack_push(s, x == y);
 }
 
 static void add(stack *s) {
-    int x = pop(s);
-    int y = pop(s);
-    push(s, x + y);
+    int x = stack_pop(s);
+    int y = stack_pop(s);
+    stack_push(s, x + y);
 }
 
 static void mult(stack *s) {
-    int x = pop(s);
-    int y = pop(s);
-    push(s, x * y);
+    int x = stack_pop(s);
+    int y = stack_pop(s);
+    stack_push(s, x * y);
 }
 
 static void s_div(stack *s) {
-    int x = pop(s);
-    int y = pop(s);
-    push(s, y / x);
+    int x = stack_pop(s);
+    int y = stack_pop(s);
+    stack_push(s, y / x);
 }
 
 static void sub(stack *s) {
-    int x = pop(s);
-    int y = pop(s);
-    push(s, y - x);
+    int x = stack_pop(s);
+    int y = stack_pop(s);
+    stack_push(s, y - x);
 }
 
 static void dup(stack *s) {
-    int x = pop(s);
-    push(s, x);
-    push(s, x);
+    int x = stack_pop(s);
+    stack_push(s, x);
+    stack_push(s, x);
 }
 
 static void popout(stack *s) {
-    printf("%d\n", pop(s));
+    printf("%d\n", stack_pop(s));
 }
 
 static void peekout(stack *s) {
-    int x = pop(s);
-    push(s, x);
+    int x = stack_pop(s);
+    stack_push(s, x);
     printf("%d\n", x);
 }
 
@@ -138,11 +143,15 @@ static void donothing(stack *s) {
     // Do nothing at all (i.e. discard token)
 }
 
+static void depth(stack *s) {
+    stack_push(s, stack_depth(s));
+}
+
 /* Directives */
 
 static void ifdirective(stack *s, int len, char* line, int* starti) {
     int i = *starti;
-    stackitem predicate = pop(s);
+    stackitem predicate = stack_pop(s);
     if (!predicate) {
         while (len > i && i >= 4 && !(
                     line[i-4] == 't' &&

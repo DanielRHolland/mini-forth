@@ -42,7 +42,7 @@ void exec(stack *s, char *word, int len, char* line, int* i) {
                 break;
         }
     } else if (isnumber(word)) {
-        push(s, atoi(word));
+        stack_push(s, atoi(word));
     }
 }
 
@@ -68,7 +68,7 @@ void eval(stack* s, int len, char* line) {
 }
 
 int main(int argc, char** argv) {
-    stack* s = newstack();
+    stack* s = stack_new();
     char *line = NULL;
     size_t len = 0;
     ssize_t read;

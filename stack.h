@@ -13,12 +13,20 @@ typedef struct {
 } stack;
 
 
-stack* newstack();
+stack* stack_new();
 
-stackitem pop(stack* s);
+stackitem stack_pop(stack* s);
 
-stackitem peek(stack* s);
+stackitem stack_peek(stack* s);
 
-void push(stack *s, stackitem si);
+void stack_push(stack *s, stackitem si);
+
+int stack_depth(stack *s);
+
+void stack_printall(stack *s);
+
+void stack_roll(stack *s);
+
+void stack_pick(stack *s);
 
 #endif
