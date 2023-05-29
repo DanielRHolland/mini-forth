@@ -9,8 +9,10 @@
 #define DEFINED_FUNC_MAX_LENGTH 1024
 #define WORD_LEN_LIMIT 255
 
+typedef struct optable optable;
+
 typedef void (*stackop)(stack *);
-typedef void (*directiveop)(stack *, int len, char* line, int* i);
+typedef void (*directiveop)(stack *, int len, char* line, int* i, optable* optable);
 
 typedef struct {
     bool isliteral;
@@ -44,12 +46,17 @@ typedef struct {
     };
 } wordop;
 
+struct optable {
+    int len;
+    wordop* optable;
+};
+
 /**
  * getop returns the first wordop in the optable which is called by the word given as a parameter
  *      if none exist, returns 0
  */
-wordop* getop(char *word);
+wordop* optable_getop(optable* optable, char *word);
 
-void optable_init();
+optable* optable_init();
 
 #endif //OPTABLE_H

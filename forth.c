@@ -25,20 +25,20 @@ bool notdelim(char c) {
     return c != ' ' && c != '\n' && c != '\t' && c != '\0';
 }
 
-void eval(stack* s, int len, char* line);
+void eval(optable* ot, stack* s, int len, char* line);
 
-void exec(stack *s, char *word, int len, char* line, int* i) {
-    wordop* op = getop(word);
+void exec(optable* ot, stack *s, char *word, int len, char* line, int* i) {
+    wordop* op = optable_getop(ot, word);
     if (op) {
         switch (op->optype) {
             case script:
-                eval(s, op->scriptlen, op->script);
+                eval(ot, s, op->scriptlen, op->script);
                 break;
             case builtin:
                 op->op(s);
                 break;
             case directive:
-                op->directive(s, len, line, i);
+                op->directive(s, len, line, i, ot);
                 break;
             case compiled:
                 for (int i = 0; i < op->oplistlen; i++) {
@@ -54,7 +54,7 @@ void exec(stack *s, char *word, int len, char* line, int* i) {
     }
 }
 
-void eval(stack* s, int len, char* line) {
+void eval(optable* ot, stack* s, int len, char* line) {
     char word[WORD_LEN_LIMIT];
     int wordi = 0;
     for (int i = 0; i < len; i++) {
@@ -63,7 +63,7 @@ void eval(stack* s, int len, char* line) {
         } else { // end of word
             if (wordi > 0) { // don't exec an empty string
                 word[wordi] = '\0';
-                exec(s, word, len, line, &i);
+                exec(ot, s, word, len, line, &i);
             }
             // start new word
             wordi = 0;
@@ -77,7 +77,7 @@ void eval(stack* s, int len, char* line) {
 
 
 int main(int argc, char** argv) {
-    optable_init();
+    optable* ot = optable_init();
 
     stack* s = stack_new();
 
@@ -85,6 +85,6 @@ int main(int argc, char** argv) {
     size_t len = 0;
     ssize_t read;
     while ((read = getline(&line, &len, stdin)) != -1) {
-        eval(s, len, line);
+        eval(ot, s, len, line);
     }
 }

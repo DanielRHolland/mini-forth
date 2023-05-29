@@ -25,13 +25,13 @@ static void peekout(stack *s);
 static void donothing(stack *s);
 static void depth(stack *s);
 
-static void ifdirective(stack *s, int len, char* line, int* i);
-static void defineop(stack *s, int len, char* line, int* i);
+static void ifdirective(stack *s, int len, char* line, int* i, optable* ot);
+static void defineop(stack *s, int len, char* line, int* i, optable* ot);
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wincompatible-function-pointer-types"
 // clang seems to not realise that the union can contain fp types beyond the first
-static wordop optable[OPTABLE_MAX_SIZE] = {
+const static wordop inittable[] = {
     {".", builtin, {popout}},
     {"peek", builtin, {peekout}},
     {"+", builtin, {add}},
@@ -59,13 +59,14 @@ static wordop optable[OPTABLE_MAX_SIZE] = {
     {"if", directive, {ifdirective}},
     {":", directive, {defineop}},
 };
-static int optablelen = 26;
+
+//static int optable->len = 26;
 #pragma clang diagnostic pop
 
-compileditem* compilewords(int len, char** script) {
+compileditem* compilewords(optable* ot, int len, char** script) {
     compileditem* oplist = malloc(sizeof(compileditem) * len);
     for (int i = 0; i < len; i++) {
-        wordop* wordop = getop(script[i]);
+        wordop* wordop = optable_getop(ot, script[i]);
         if (wordop) {
             oplist[i].isliteral = false;
             oplist[i].stackop = wordop->op;
@@ -77,41 +78,46 @@ compileditem* compilewords(int len, char** script) {
     return oplist;
 }
 
-void optable_init() {
+optable* optable_init() {
+    optable* ot = malloc(sizeof(optable));
+    ot->optable = malloc(sizeof(wordop) * OPTABLE_MAX_SIZE);
+    int inittablesize =sizeof(inittable);
+    ot->len = inittablesize / sizeof(*inittable);
+    memcpy(ot->optable, inittable, inittablesize);
 
-    optable[optablelen].word = "nip";
-    optable[optablelen].optype = compiled;
+    ot->optable[ot->len].word = "nip";
+    ot->optable[ot->len].optype = compiled;
     int oplistlen = 2;
-    optable[optablelen].oplistlen = oplistlen;
+    ot->optable[ot->len].oplistlen = oplistlen;
     char* ws[] = {"swap", "drop"};
-    compileditem* oplist = compilewords(2, ws);
-    optable[optablelen].oplist = oplist;
-    optablelen++;
+    compileditem* oplist = compilewords(ot, 2, ws);
+    ot->optable[ot->len].oplist = oplist;
+    ot->len++;
 
-    optable[optablelen].word = "tuck";
-    optable[optablelen].optype = compiled;
+    ot->optable[ot->len].word = "tuck";
+    ot->optable[ot->len].optype = compiled;
     oplistlen = 3;
-    optable[optablelen].oplistlen = oplistlen;
+    ot->optable[ot->len].oplistlen = oplistlen;
     char* ws2[] = {"dup", "rot", "rot"};
-    oplist = compilewords(oplistlen, ws2);
-    optable[optablelen].oplist = oplist;
-    optablelen++;
+    oplist = compilewords(ot, oplistlen, ws2);
+    ot->optable[ot->len].oplist = oplist;
+    ot->len++;
 
-    optable[optablelen].word = "incr";
-    optable[optablelen].optype = compiled;
+    ot->optable[ot->len].word = "incr";
+    ot->optable[ot->len].optype = compiled;
     oplistlen = 2;
-    optable[optablelen].oplistlen = oplistlen;
+    ot->optable[ot->len].oplistlen = oplistlen;
     char* ws3[] = {"1", "+"};
-    oplist = compilewords(2, ws3);
-    optable[optablelen].oplist = oplist;
-    optablelen++;
-
+    oplist = compilewords(ot, 2, ws3);
+    ot->optable[ot->len].oplist = oplist;
+    ot->len++;
+    return ot;
 }
 
-wordop* getop(char *word) {
-    for (int i = 0; i < optablelen; i++) {
-        if (!strcmp(optable[i].word, word)) {
-            return &optable[i];
+wordop* optable_getop(optable* optable, char *word) {
+    for (int i = 0; i < optable->len; i++) {
+        if (!strcmp(optable->optable[i].word, word)) {
+            return &optable->optable[i];
         }
     }
     return 0;
@@ -243,7 +249,7 @@ static void s_abs(stack *s) {
 
 /* Directives */
 
-static void ifdirective(stack *s, int len, char* line, int* starti) {
+static void ifdirective(stack *s, int len, char* line, int* starti, optable* ot_IDNORED) {
     int i = *starti;
     stackitem predicate = stack_pop(s);
     if (!predicate) {
@@ -268,7 +274,7 @@ static void ifdirective(stack *s, int len, char* line, int* starti) {
  * returns new position of input index
  *
  */
-static void defineop(stack* s_IGNORED, int len_IGNORED, char *input, int* starti) {
+static void defineop(stack* s_IGNORED, int len_IGNORED, char *input, int* starti, optable* optable) {
     // value easier to deal with (than pointer)
     int i = *starti;
     // name by which the function will be called
@@ -296,18 +302,18 @@ static void defineop(stack* s_IGNORED, int len_IGNORED, char *input, int* starti
     }
     funcscript[funcscripti] = '\0';
 
-    // optable bounds check 
-    if (optablelen >= OPTABLE_MAX_SIZE) {
+    // optable->optable bounds check 
+    if (optable->len >= OPTABLE_MAX_SIZE) {
         // Error
-        fprintf(stderr, "Error: optable reached max size, failed to create new user defined operation");
+        fprintf(stderr, "Error: optable->optable reached max size, failed to create new user defined operation");
         exit(1);
     }
     // add op to end of table, and increment size
-    optable[optablelen].word = opcode;
-    optable[optablelen].optype = script;
-    optable[optablelen].script = funcscript;
-    optable[optablelen].scriptlen = funcscripti;
-    optablelen++;
+    optable->optable[optable->len].word = opcode;
+    optable->optable[optable->len].optype = script;
+    optable->optable[optable->len].script = funcscript;
+    optable->optable[optable->len].scriptlen = funcscripti;
+    optable->len++;
 
     // move read position forwards
     *starti = i;
