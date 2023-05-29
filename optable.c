@@ -55,10 +55,11 @@ static wordop optable[OPTABLE_MAX_SIZE] = {
     {"then", builtin, {donothing}},
     {"depth", builtin, {depth}},
     {".s", builtin, {stack_printall}},
+    {"clearstack", builtin, {stack_clear}},
     {"if", directive, {ifdirective}},
     {":", directive, {defineop}},
 };
-static int optablelen = 25;
+static int optablelen = 26;
 #pragma clang diagnostic pop
 
 compileditem* compilewords(int len, char** script) {
@@ -87,13 +88,21 @@ void optable_init() {
     optable[optablelen].oplist = oplist;
     optablelen++;
 
+    optable[optablelen].word = "tuck";
+    optable[optablelen].optype = compiled;
+    oplistlen = 3;
+    optable[optablelen].oplistlen = oplistlen;
+    char* ws2[] = {"dup", "rot", "rot"};
+    oplist = compilewords(oplistlen, ws2);
+    optable[optablelen].oplist = oplist;
+    optablelen++;
 
     optable[optablelen].word = "incr";
     optable[optablelen].optype = compiled;
     oplistlen = 2;
     optable[optablelen].oplistlen = oplistlen;
-    char* ws2[] = {"1", "+"};
-    oplist = compilewords(2, ws2);
+    char* ws3[] = {"1", "+"};
+    oplist = compilewords(2, ws3);
     optable[optablelen].oplist = oplist;
     optablelen++;
 

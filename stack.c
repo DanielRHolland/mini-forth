@@ -77,3 +77,7 @@ void stack_pick(stack *s) {
         stack_push(s, 0);
     }
 }
+
+void stack_clear(stack* s) {
+    s->size = 0;
+}

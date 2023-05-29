@@ -29,4 +29,6 @@ void stack_roll(stack *s);
 
 void stack_pick(stack *s);
 
+void stack_clear(stack *s);
+
 #endif
