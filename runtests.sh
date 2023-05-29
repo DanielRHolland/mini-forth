@@ -19,7 +19,7 @@ runtest () {
 
     if [ "1" -eq "$?" ] ; then
         echo "Test $n failed: $file" >&2
-        echo "Diff:" >&2
+        echo "Diff: (expected vs actual)" >&2
         echo "$diff"
         exitcode=1
         failed="$(expr "$failed" + 1)"
@@ -37,4 +37,5 @@ if [ "0" -eq "$failed" ]; then
     exit 0
 else
     echo "$failed/$n tests failed" >&2
+    exit 1
 fi
