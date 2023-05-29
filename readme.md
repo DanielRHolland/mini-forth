@@ -12,3 +12,7 @@ _Be aware:_
  - The implementations have some subtle differences
  - This is a toy, not intended for serious use
 
+
+----
+
+Released into the public domain.
