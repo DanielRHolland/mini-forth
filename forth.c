@@ -90,11 +90,9 @@ char* buffer_eval(int len, char* line) {
         s = stack_new();
         initialised = true;
         outputline = 0;
+        outputbuffer = malloc(sizeof(char) * 1024);
     }
-    else {
-        free(outputbuffer);
-    }
-    outputbuffer = malloc(sizeof(char) * 1024);
+    strcpy(outputbuffer, "");
     eval(ot, s, len, line);
     if (outputline) {
         outputline = 0;
