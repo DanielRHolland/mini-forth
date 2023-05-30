@@ -79,10 +79,36 @@ void eval(optable* ot, stack* s, int len, char* line) {
     }
 }
 
+int initialised = false;
+optable* ot;
+stack* s;
+int lastline = 0;
 
-#ifndef __EMSCRIPTEN__
+char* buffer_eval(int len, char* line) {
+    if (!initialised) {
+        ot = optable_new();
+        s = stack_new();
+        initialised = true;
+        outputline = 0;
+    }
+    else {
+        free(outputbuffer);
+    }
+    outputbuffer = malloc(sizeof(char) * 1024);
+    eval(ot, s, len, line);
+    if (outputline) {
+        outputline = 0;
+        return outputbuffer;
+    } else {
+        char* v = "foo";
+        char* v2 = "bar";
+        strcat(v, v2);
+        strcat(v, line);
+        return v;
+    }
+}
 
-int main(int argc, char** argv) {
+void stdin_eval() {
     optable* ot = optable_new();
     stack* s = stack_new();
     char *line = NULL;
@@ -93,32 +119,19 @@ int main(int argc, char** argv) {
     }
 }
 
+#ifndef __EMSCRIPTEN__
+
+int main(int argc, char** argv) {
+    if (argc>1) printf("%s", buffer_eval(strlen(argv[1])+1, argv[1]));
+    else stdin_eval();
+}
+
 #else
 
 #include <emscripten/emscripten.h>
-int initialised = false;
-optable* ot;
-stack* s;
-int lastline = 0;
-
 #define EXTERN
 
-EXTERN EMSCRIPTEN_KEEPALIVE char* extern_eval(int len, char* line) {
-    if (!initialised) {
-        ot = optable_new();
-        s = stack_new();
-        initialised = true;
-        outputline = malloc(sizeof(int));
-        *outputline = 0;
-        // outputtobuffer = true;
-    }
-    eval(ot, s, len, line);
-    if (*outputline != lastline) {
-        lastline = *outputline;
-        return outputbuffer;
-    } else {
-        return "";
-    }
-
+EXTERN EMSCRIPTEN_KEEPALIVE char* extern_eval(char* line) {
+    return buffer_eval(strlen(line)+1, line);
 }
 #endif

@@ -201,25 +201,33 @@ static void dup(stack *s) {
     stack_push(s, x);
 }
 
+//#ifdef __EMSCRIPTEN__
+int outputline = 0;
+char* outputbuffer;
+//#endif
 
 static void popout(stack *s) {
-#ifdef __EMSCRIPTEN__
-        sprintf(outputbuffer, "%d\n", stack_pop(s));
-        (*outputline)++;
-#else
-        printf("%d\n", stack_pop(s));
-#endif
+if (outputbuffer) {
+    char x[WORD_LEN_LIMIT];
+    sprintf(x, "%d\n", stack_pop(s));
+    strcat(outputbuffer, x);
+    outputline++;
+} else {
+    printf("%d\n", stack_pop(s));
+}
 }
 
 static void peekout(stack *s) {
     int x = stack_pop(s);
     stack_push(s, x);
-#ifdef __EMSCRIPTEN__
-        sprintf(outputbuffer, "%d\n", x);
-        (*outputline)++;
-#else
-        printf("%d\n", x);
-#endif
+if (outputbuffer) {
+    char y[WORD_LEN_LIMIT];
+    sprintf(y, "%d\n", x);
+    strcat(outputbuffer, y);
+    outputline++;
+} else {
+    printf("%d\n", x);
+}
 }
 
 static void donothing(stack *s) {

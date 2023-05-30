@@ -15,10 +15,8 @@ typedef struct wordop wordop;
 typedef void (*stackop)(stack *);
 typedef void (*directiveop)(stack *, int len, char* line, int* i, optable* optable);
 
-#ifdef __EMSCRIPTEN__
-extern char outputbuffer[1024];
-extern int* outputline;
-#endif
+extern char* outputbuffer;
+extern int outputline;
 
 typedef struct {
     bool isliteral;
