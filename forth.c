@@ -100,11 +100,7 @@ char* buffer_eval(int len, char* line) {
         outputline = 0;
         return outputbuffer;
     } else {
-        char* v = "foo";
-        char* v2 = "bar";
-        strcat(v, v2);
-        strcat(v, line);
-        return v;
+        return "";
     }
 }
 
