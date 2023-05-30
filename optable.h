@@ -10,14 +10,20 @@
 #define WORD_LEN_LIMIT 255
 
 typedef struct optable optable;
+typedef struct wordop wordop;
 
 typedef void (*stackop)(stack *);
 typedef void (*directiveop)(stack *, int len, char* line, int* i, optable* optable);
 
+#ifdef __EMSCRIPTEN__
+extern char outputbuffer[1024];
+extern int* outputline;
+#endif
+
 typedef struct {
     bool isliteral;
     union {
-        stackop stackop;
+        wordop* wordop;
         stackitem literal;
     };
 } compileditem;
@@ -29,7 +35,7 @@ typedef enum {
     compiled = 3,
 } optype;
 
-typedef struct {
+struct wordop {
     char* word;
     optype optype;
     union {
@@ -44,7 +50,7 @@ typedef struct {
             int oplistlen;
         };
     };
-} wordop;
+};
 
 struct optable {
     int len;
@@ -57,6 +63,6 @@ struct optable {
  */
 wordop* optable_getop(optable* optable, char *word);
 
-optable* optable_init();
+optable* optable_new();
 
 #endif //OPTABLE_H

@@ -63,13 +63,13 @@ const static wordop inittable[] = {
 //static int optable->len = 26;
 #pragma clang diagnostic pop
 
-compileditem* compilewords(optable* ot, int len, char** script) {
+compileditem* optable_compilewords(optable* ot, int len, char** script) {
     compileditem* oplist = malloc(sizeof(compileditem) * len);
     for (int i = 0; i < len; i++) {
         wordop* wordop = optable_getop(ot, script[i]);
         if (wordop) {
             oplist[i].isliteral = false;
-            oplist[i].stackop = wordop->op;
+            oplist[i].wordop = wordop;
         } else {
             oplist[i].isliteral = true;
             oplist[i].literal = atoi(script[i]);
@@ -78,39 +78,40 @@ compileditem* compilewords(optable* ot, int len, char** script) {
     return oplist;
 }
 
-optable* optable_init() {
+void optable_addop(optable* ot, char* name, int len, char** words) {
+    ot->optable[ot->len].word = malloc(sizeof(name));
+    strcpy(ot->optable[ot->len].word, name);
+    ot->optable[ot->len].optype = compiled;
+    ot->optable[ot->len].oplistlen = len;
+    compileditem* oplist = optable_compilewords(ot, len, words);
+    ot->optable[ot->len].oplist = oplist;
+    ot->len++;
+}
+
+optable* optable_new() {
     optable* ot = malloc(sizeof(optable));
     ot->optable = malloc(sizeof(wordop) * OPTABLE_MAX_SIZE);
-    int inittablesize =sizeof(inittable);
+    int inittablesize = sizeof(inittable);
     ot->len = inittablesize / sizeof(*inittable);
     memcpy(ot->optable, inittable, inittablesize);
 
-    ot->optable[ot->len].word = "nip";
-    ot->optable[ot->len].optype = compiled;
-    int oplistlen = 2;
-    ot->optable[ot->len].oplistlen = oplistlen;
-    char* ws[] = {"swap", "drop"};
-    compileditem* oplist = compilewords(ot, 2, ws);
-    ot->optable[ot->len].oplist = oplist;
-    ot->len++;
-
-    ot->optable[ot->len].word = "tuck";
-    ot->optable[ot->len].optype = compiled;
-    oplistlen = 3;
-    ot->optable[ot->len].oplistlen = oplistlen;
-    char* ws2[] = {"dup", "rot", "rot"};
-    oplist = compilewords(ot, oplistlen, ws2);
-    ot->optable[ot->len].oplist = oplist;
-    ot->len++;
-
-    ot->optable[ot->len].word = "incr";
-    ot->optable[ot->len].optype = compiled;
-    oplistlen = 2;
-    ot->optable[ot->len].oplistlen = oplistlen;
-    char* ws3[] = {"1", "+"};
-    oplist = compilewords(ot, 2, ws3);
-    ot->optable[ot->len].oplist = oplist;
-    ot->len++;
+    typedef struct {
+        char* name;
+        int len;
+        char** words;
+    } tocompile;
+    tocompile defs[] = {
+        {"nip", 2, (char*[]){"swap","drop"}},
+        {"tuck", 3, (char*[]){"dup", "rot", "rot"}},
+        {"incr", 2, (char*[]){"1", "+"}},
+    };
+    int defslen = sizeof(defs) / sizeof(*defs);
+    for (int i = 0; i < defslen; i++) {
+        tocompile d = defs[i];
+        char* nm = defs[i].name;
+        char** ws = d.words;
+        optable_addop(ot,nm, d.len,ws);
+    }
     return ot;
 }
 
@@ -200,14 +201,25 @@ static void dup(stack *s) {
     stack_push(s, x);
 }
 
+
 static void popout(stack *s) {
-    printf("%d\n", stack_pop(s));
+#ifdef __EMSCRIPTEN__
+        sprintf(outputbuffer, "%d\n", stack_pop(s));
+        (*outputline)++;
+#else
+        printf("%d\n", stack_pop(s));
+#endif
 }
 
 static void peekout(stack *s) {
     int x = stack_pop(s);
     stack_push(s, x);
-    printf("%d\n", x);
+#ifdef __EMSCRIPTEN__
+        sprintf(outputbuffer, "%d\n", x);
+        (*outputline)++;
+#else
+        printf("%d\n", x);
+#endif
 }
 
 static void donothing(stack *s) {
@@ -278,11 +290,11 @@ static void defineop(stack* s_IGNORED, int len_IGNORED, char *input, int* starti
     // value easier to deal with (than pointer)
     int i = *starti;
     // name by which the function will be called
-    char *opcode = malloc(sizeof(char) * WORD_LEN_LIMIT);
+    char* opcode = malloc(sizeof(char) * WORD_LEN_LIMIT);
     int opcodei = 0;
 
     // code to be evaluated when function is called
-    char *funcscript = malloc(sizeof(char) * DEFINED_FUNC_MAX_LENGTH);
+    char* funcscript = malloc(sizeof(char) * DEFINED_FUNC_MAX_LENGTH);
     int funcscripti = 0;
     
     // skip ' ' and ':'

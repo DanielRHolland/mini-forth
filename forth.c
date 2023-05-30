@@ -27,28 +27,32 @@ bool notdelim(char c) {
 
 void eval(optable* ot, stack* s, int len, char* line);
 
+void op_exec(wordop* op, optable* ot, stack *s, char *word, int len, char* line, int* i) {
+    switch (op->optype) {
+        case script:
+            eval(ot, s, op->scriptlen, op->script);
+            break;
+        case builtin:
+            op->op(s);
+            break;
+        case directive:
+            op->directive(s, len, line, i, ot);
+            break;
+        case compiled:
+            for (int j = 0; j < op->oplistlen; j++) {
+                if (op->oplist[j].isliteral) {
+                    stack_push(s, op->oplist[j].literal);
+                } else {
+                    op_exec(op->oplist[j].wordop, ot, s, word, len, line, i);
+                }
+            }
+    }
+}
+
 void exec(optable* ot, stack *s, char *word, int len, char* line, int* i) {
     wordop* op = optable_getop(ot, word);
     if (op) {
-        switch (op->optype) {
-            case script:
-                eval(ot, s, op->scriptlen, op->script);
-                break;
-            case builtin:
-                op->op(s);
-                break;
-            case directive:
-                op->directive(s, len, line, i, ot);
-                break;
-            case compiled:
-                for (int i = 0; i < op->oplistlen; i++) {
-                    if (op->oplist[i].isliteral) {
-                        stack_push(s, op->oplist[i].literal);
-                    } else {
-                        (op->oplist[i].stackop)(s);
-                    }
-                }
-        }
+        op_exec(op, ot, s, word, len, line, i);
     } else if (isnumber(word)) {
         stack_push(s, atoi(word));
     }
@@ -76,11 +80,11 @@ void eval(optable* ot, stack* s, int len, char* line) {
 }
 
 
+#ifndef __EMSCRIPTEN__
+
 int main(int argc, char** argv) {
-    optable* ot = optable_init();
-
+    optable* ot = optable_new();
     stack* s = stack_new();
-
     char *line = NULL;
     size_t len = 0;
     ssize_t read;
@@ -88,3 +92,33 @@ int main(int argc, char** argv) {
         eval(ot, s, len, line);
     }
 }
+
+#else
+
+#include <emscripten/emscripten.h>
+int initialised = false;
+optable* ot;
+stack* s;
+int lastline = 0;
+
+#define EXTERN
+
+EXTERN EMSCRIPTEN_KEEPALIVE char* extern_eval(int len, char* line) {
+    if (!initialised) {
+        ot = optable_new();
+        s = stack_new();
+        initialised = true;
+        outputline = malloc(sizeof(int));
+        *outputline = 0;
+        // outputtobuffer = true;
+    }
+    eval(ot, s, len, line);
+    if (*outputline != lastline) {
+        lastline = *outputline;
+        return outputbuffer;
+    } else {
+        return "";
+    }
+
+}
+#endif
