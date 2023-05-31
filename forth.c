@@ -25,40 +25,52 @@ bool notdelim(char c) {
     return c != ' ' && c != '\n' && c != '\t' && c != '\0';
 }
 
-void eval(optable* ot, stack* s, int len, char* line);
+typedef struct {
+    optable* ot;
+    stack* s;
+} forthmachine;
 
-void op_exec(wordop* op, optable* ot, stack *s, char *word, int len, char* line, int* i) {
+forthmachine* forthmachine_new() {
+    forthmachine* fm = malloc(sizeof(forthmachine));
+    fm->ot = optable_new();
+    fm->s = stack_new();
+    return fm;
+}
+
+void eval(forthmachine* fm, int len, char* line);
+
+void op_exec(wordop* op, forthmachine* fm, char *word, int len, char* line, int* i) {
     switch (op->optype) {
         case script:
-            eval(ot, s, op->scriptlen, op->script);
+            eval(fm, op->scriptlen, op->script);
             break;
         case builtin:
-            op->op(s);
+            op->op(fm->s);
             break;
         case directive:
-            op->directive(s, len, line, i, ot);
+            op->directive(fm->s, len, line, i, fm->ot);
             break;
         case compiled:
             for (int j = 0; j < op->oplistlen; j++) {
                 if (op->oplist[j].isliteral) {
-                    stack_push(s, op->oplist[j].literal);
+                    stack_push(fm->s, op->oplist[j].literal);
                 } else {
-                    op_exec(op->oplist[j].wordop, ot, s, word, len, line, i);
+                    op_exec(op->oplist[j].wordop, fm, word, len, line, i);
                 }
             }
     }
 }
 
-void exec(optable* ot, stack *s, char *word, int len, char* line, int* i) {
-    wordop* op = optable_getop(ot, word);
+void exec(forthmachine* fm, char *word, int len, char* line, int* i) {
+    wordop* op = optable_getop(fm->ot, word);
     if (op) {
-        op_exec(op, ot, s, word, len, line, i);
+        op_exec(op, fm, word, len, line, i);
     } else if (isnumber(word)) {
-        stack_push(s, atoi(word));
+        stack_push(fm->s, atoi(word));
     }
 }
 
-void eval(optable* ot, stack* s, int len, char* line) {
+void eval(forthmachine* fm, int len, char* line) {
     char word[WORD_LEN_LIMIT];
     int wordi = 0;
     for (int i = 0; i < len; i++) {
@@ -67,7 +79,7 @@ void eval(optable* ot, stack* s, int len, char* line) {
         } else { // end of word
             if (wordi > 0) { // don't exec an empty string
                 word[wordi] = '\0';
-                exec(ot, s, word, len, line, &i);
+                exec(fm, word, len, line, &i);
             }
             // start new word
             wordi = 0;
@@ -80,20 +92,18 @@ void eval(optable* ot, stack* s, int len, char* line) {
 }
 
 int initialised = false;
-optable* ot;
-stack* s;
+forthmachine* fm;
 int lastline = 0;
 
 char* buffer_eval(int len, char* line) {
     if (!initialised) {
-        ot = optable_new();
-        s = stack_new();
+        fm = forthmachine_new();
         initialised = true;
         outputline = 0;
         outputbuffer = malloc(sizeof(char) * 1024);
     }
     strcpy(outputbuffer, "");
-    eval(ot, s, len, line);
+    eval(fm, len, line);
     if (outputline) {
         outputline = 0;
         return outputbuffer;
@@ -103,13 +113,12 @@ char* buffer_eval(int len, char* line) {
 }
 
 void stdin_eval() {
-    optable* ot = optable_new();
-    stack* s = stack_new();
+    forthmachine* fm = forthmachine_new();
     char *line = NULL;
     size_t len = 0;
     ssize_t read;
     while ((read = getline(&line, &len, stdin)) != -1) {
-        eval(ot, s, len, line);
+        eval(fm, len, line);
     }
 }
 
