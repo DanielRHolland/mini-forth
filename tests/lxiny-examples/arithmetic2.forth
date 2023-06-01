@@ -1,5 +1,5 @@
 INPUT
-99 negate .k
+99 negate .
 -99 abs .  
 52 23 max .
 52 23 min .
