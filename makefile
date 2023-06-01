@@ -1,8 +1,16 @@
+srcfiles := forth.c optable.c stack.c
+
+nativeexe := ./forth
+
+ifneq (, $(shell which clang))
+	CC := clang
+endif
+
 build:
-	clang forth.c optable.c stack.c -o ./forth -Wall
+	${CC} ${srcfiles} -o ${nativeexe} -Wall
 run:
-	./forth
+	${nativeexe}
 run-rlwrap:
-	rlwrap -r -f rlwrapcompletions.forth ./forth
+	rlwrap -r -f rlwrapcompletions.forth ${nativeexe}
 build-wasm:
-	emcc forth.c optable.c stack.c -Wall -o forthlib.js -s NO_EXIT_RUNTIME=1 -s "EXPORTED_RUNTIME_METHODS=['ccall']"
+	emcc ${srcfiles} -Wall -o forthlib.js -s NO_EXIT_RUNTIME=1 -s "EXPORTED_RUNTIME_METHODS=['ccall']"
