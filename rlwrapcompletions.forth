@@ -1,19 +1,28 @@
-pop
-push
+.
 peek
-if
-then
-:
-;
 +
 -
 *
 /
+negate
+abs
+mod
+max
+min
 dup
-dump
 not
 =
 swap
 drop
 over
 rot
+pick
+roll
+depth
+.s
+clearstack
+if then 
+: ;
+nip
+tuck
+incr
