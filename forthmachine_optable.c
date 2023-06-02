@@ -219,13 +219,9 @@ static void dup(forthmachine* fm) {
 
 
 static void forthmachine_output(forthmachine* fm, stackitem v) {
-if (fm->outputbuffer) {
     char x[WORD_LEN_LIMIT];
     sprintf(x, "%d\n", v);
     strcat(fm->outputbuffer, x); // TODO: fix: UNSAFE!
-} else {
-    printf("%d\n", v);
-}
 }
 
 static void popout(forthmachine* fm) {
