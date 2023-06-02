@@ -5,108 +5,21 @@
 #include <unistd.h>
 #include <stdbool.h>
 
-#ifndef STACK_H
 #include "stack.h"
-#endif
-#ifndef OPTABLE_H
-#include "optable.h"
-#endif
-
-bool isnumber(char *text) {
-    for(int j = strlen(text); j > 0; j--) {
-        if(text[j] < '0' && text[j] > '9') {
-            return false;
-        }
-    }
-    return true;
-}
-
-bool notdelim(char c) {
-    return c != ' ' && c != '\n' && c != '\t' && c != '\0';
-}
-
-typedef struct {
-    optable* ot;
-    stack* s;
-} forthmachine;
-
-forthmachine* forthmachine_new() {
-    forthmachine* fm = malloc(sizeof(forthmachine));
-    fm->ot = optable_new();
-    fm->s = stack_new();
-    return fm;
-}
-
-void eval(forthmachine* fm, int len, char* line);
-
-void op_exec(wordop* op, forthmachine* fm, char *word, int len, char* line, int* i) {
-    switch (op->optype) {
-        case script:
-            eval(fm, op->scriptlen, op->script);
-            break;
-        case builtin:
-            op->op(fm->s);
-            break;
-        case directive:
-            op->directive(fm->s, len, line, i, fm->ot);
-            break;
-        case compiled:
-            for (int j = 0; j < op->oplistlen; j++) {
-                if (op->oplist[j].isliteral) {
-                    stack_push(fm->s, op->oplist[j].literal);
-                } else {
-                    op_exec(op->oplist[j].wordop, fm, word, len, line, i);
-                }
-            }
-    }
-}
-
-void exec(forthmachine* fm, char *word, int len, char* line, int* i) {
-    wordop* op = optable_getop(fm->ot, word);
-    if (op) {
-        op_exec(op, fm, word, len, line, i);
-    } else if (isnumber(word)) {
-        stack_push(fm->s, atoi(word));
-    }
-}
-
-void eval(forthmachine* fm, int len, char* line) {
-    char word[WORD_LEN_LIMIT];
-    int wordi = 0;
-    for (int i = 0; i < len; i++) {
-        if (notdelim(line[i]) && wordi < WORD_LEN_LIMIT - 1) {
-            word[wordi++] = line[i];
-        } else { // end of word
-            if (wordi > 0) { // don't exec an empty string
-                word[wordi] = '\0';
-                exec(fm, word, len, line, &i);
-            }
-            // start new word
-            wordi = 0;
-        }
-        // end of input string
-        if (line[i] == '\0') {
-            return;
-        }
-    }
-}
+#include "forthmachine.h"
 
 int initialised = false;
 forthmachine* fm;
 int lastline = 0;
-
 char* buffer_eval(int len, char* line) {
     if (!initialised) {
         fm = forthmachine_new();
         initialised = true;
-        outputline = 0;
-        outputbuffer = malloc(sizeof(char) * 1024);
     }
-    strcpy(outputbuffer, "");
-    eval(fm, len, line);
-    if (outputline) {
-        outputline = 0;
-        return outputbuffer;
+    strcpy(fm->outputbuffer, "");
+    forthmachine_eval(fm, len, line);
+    if (fm->outputbuffer && strlen(fm->outputbuffer)) {
+        return fm->outputbuffer;
     } else {
         return "";
     }
@@ -118,7 +31,9 @@ void stdin_eval() {
     size_t len = 0;
     ssize_t read;
     while ((read = getline(&line, &len, stdin)) != -1) {
-        eval(fm, len, line);
+        forthmachine_eval(fm, len, line);
+        printf("%s", fm->outputbuffer);
+        strcpy(fm->outputbuffer, "");
     }
 }
 

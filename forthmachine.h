@@ -1,9 +1,9 @@
+#ifndef OPTABLE_H
+#define OPTABLE_H
 #include <stdio.h>
 #include <stdbool.h>
 #include "stack.h"
 
-#ifndef OPTABLE_H
-#define OPTABLE_H
 
 #define OPTABLE_MAX_SIZE 1024
 #define DEFINED_FUNC_MAX_LENGTH 1024
@@ -11,9 +11,11 @@
 
 typedef struct optable optable;
 typedef struct wordop wordop;
+typedef struct forthmachine forthmachine;
 
-typedef void (*stackop)(stack *);
-typedef void (*directiveop)(stack *, int len, char* line, int* i, optable* optable);
+
+typedef void (*stackop)(forthmachine* fm);
+typedef void (*directiveop)(forthmachine* fm, int len, char* line, int* i);
 
 extern char* outputbuffer;
 extern int outputline;
@@ -62,5 +64,16 @@ struct optable {
 wordop* optable_getop(optable* optable, char *word);
 
 optable* optable_new();
+
+struct forthmachine {
+    optable* ot;
+    stack* s;
+    char* outputbuffer;
+};
+
+#define MAX_OUTPUT_BUFFER_SIZE 1024
+
+forthmachine* forthmachine_new();
+void forthmachine_eval(forthmachine* fm, int len, char* line);
 
 #endif //OPTABLE_H

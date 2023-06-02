@@ -1,4 +1,4 @@
-srcfiles := forth.c optable.c stack.c
+srcfiles := drhstrings.c forthmachine.c forthmachine_optable.c forth.c stack.c
 
 nativeexe := ./forth
 

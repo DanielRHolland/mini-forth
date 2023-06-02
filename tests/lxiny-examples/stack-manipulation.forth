@@ -1,6 +1,6 @@
 INPUT
 3 dup .s clearstack
-2 5 swap  .s clearstack
+2 5 swap .s clearstack
 6 4 5 rot .s clearstack
 4 0 drop .s clearstack
 1 2 3 nip .s clearstack

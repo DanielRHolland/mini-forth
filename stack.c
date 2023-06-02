@@ -1,4 +1,7 @@
 #include "stack.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 stack* stack_new() {
     stack* s = (stack*)malloc(sizeof(stack));
@@ -8,6 +11,11 @@ stack* stack_new() {
     return s;
 }
 
+void exitunderflow() {
+    fprintf(stderr, "Error Stack Underflow");
+    exit(1);
+}
+
 stackitem stack_pop(stack* s) {
     if (s->size > 0) {
         s->size = s->size - 1;
@@ -15,6 +23,7 @@ stackitem stack_pop(stack* s) {
         return si;
     } else {
         // tried to pop empty stack
+        exitunderflow();
         return 0;
     }
 }
@@ -24,6 +33,7 @@ stackitem stack_peek(stack* s) {
         return s->start[s->size - 1];
     } else {
         // tried to pop empty stack
+        exitunderflow();
         return 0;
     }
 }
@@ -31,7 +41,7 @@ stackitem stack_peek(stack* s) {
 void stack_push(stack *s, stackitem si) {
 //        fprintf(stderr, "pushing %d", si);
     if (s->size >= s->maxsize) {
-        fprintf(stderr, "Error Stack Overflow");
+        fprintf(stderr, "Error: Stack Overflow");
         exit(1);
     } else {
         s->start[s->size] = si;
@@ -39,21 +49,39 @@ void stack_push(stack *s, stackitem si) {
     }
 }
 
-int stack_depth(stack *s) {
+int stack_depth(stack* s) {
     return s->size;
 }
 
-void stack_printall(stack *s) {
-    printf("<%d>", s->size);
-    for (int i = 0; i < s->size; i++) {
-        printf(" %d", s->start[i]);
+/**
+ * Appends string representing whole stack to the string buffer passed in
+ */
+void stack_tostringappend(stack* s, int sbmaxlen, char* sb) {
+    int i = strlen(sb);
+    if (i >= sbmaxlen) {
+        fprintf(stderr, "Error: Output would overflow buffer if printed");
+        exit(0); 
     }
-    printf("\n");
+    sprintf(&(sb[i]), "<%d>", s->size);
+    i = strlen(sb);
+    if (i >= sbmaxlen) {
+        fprintf(stderr, "Error: Output would overflow Buffer if printed");
+        exit(0); 
+    }
+    for (int j = 0; j < s->size; j++) {
+        sprintf(&(sb[i]), " %d", s->start[j]);
+        i = strlen(sb);
+        if (i >= sbmaxlen) {
+            fprintf(stderr, "Error: Output would overflow Buffer if printed");
+            exit(0); 
+        }
+    }
+    sprintf(&(sb[i]), "\n");
 }
 
-void stack_roll(stack *s) {
+void stack_roll(stack* s) {
     int posfromtop = stack_pop(s); // top is 0, bottom is s->size - 1
-    const int maxindex = s->size - 1;
+    int maxindex = s->size - 1;
     int i = maxindex - posfromtop;
     if (i >= 0) {
         int newtop = s->start[i];
@@ -62,19 +90,19 @@ void stack_roll(stack *s) {
         }
         s->start[i] = newtop;
     } else {
-        // no item found
-        stack_push(s, 0);
+        // tried to pop empty stack
+        exitunderflow();
     }
 }
 
 void stack_pick(stack *s) {
     int posfromtop = stack_pop(s); // top is 0, bottom is s->size - 1
-    const int maxindex = s->size - 1;
+    int maxindex = s->size - 1;
     if (s->size > posfromtop) {
         stack_push(s, s->start[maxindex - posfromtop]);
     } else {
-        // no item found
-        stack_push(s, 0);
+        // tried to pop empty stack
+        exitunderflow();
     }
 }
 

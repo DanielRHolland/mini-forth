@@ -1,32 +1,38 @@
-#include "optable.h"
+#include "forthmachine.h"
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "drhstrings.h"
 
-static void not(stack *s);
-static void drop(stack *s);
-static void over(stack *s);
-static void rot(stack *s);
-static void swap(stack *s);
-static void eq(stack *s);
-static void add(stack *s);
-static void mult(stack *s);
-static void s_div(stack *s);
-static void mod(stack *s);
-static void negate(stack *s);
-static void s_abs(stack *s);
-static void max(stack *s);
-static void min(stack *s);
-static void sub(stack *s);
-static void dup(stack *s);
-static void popout(stack *s);
-static void peekout(stack *s);
-static void donothing(stack *s);
-static void depth(stack *s);
+static void not(forthmachine* fm);
+static void drop(forthmachine* fm);
+static void over(forthmachine* fm);
+static void rot(forthmachine* fm);
+static void swap(forthmachine* fm);
+static void eq(forthmachine* fm);
+static void add(forthmachine* fm);
+static void mult(forthmachine* fm);
+static void s_div(forthmachine* fm);
+static void mod(forthmachine* fm);
+static void negate(forthmachine* fm);
+static void s_abs(forthmachine* fm);
+static void max(forthmachine* fm);
+static void min(forthmachine* fm);
+static void sub(forthmachine* fm);
+static void dup(forthmachine* fm);
+static void popout(forthmachine* fm);
+static void peekout(forthmachine* fm);
+static void donothing(forthmachine* fm);
+static void depth(forthmachine* fm);
 
-static void ifdirective(stack *s, int len, char* line, int* i, optable* ot);
-static void defineop(stack *s, int len, char* line, int* i, optable* ot);
+static void printall(forthmachine* fm);
+static void pick(forthmachine* fm);
+static void roll(forthmachine* fm);
+static void clearstack(forthmachine* fm);
+
+static void ifdirective(forthmachine* fm, int len, char* line, int* i);
+static void defineop(forthmachine* fm, int len, char* line, int* i);
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wincompatible-function-pointer-types"
@@ -50,17 +56,15 @@ const static wordop inittable[] = {
     {"drop", builtin, {drop}},
     {"over", builtin, {over}},
     {"rot", builtin, {rot}},
-    {"pick", builtin, {stack_pick}},
-    {"roll", builtin, {stack_roll}},
+    {"pick", builtin, {pick}},
+    {"roll", builtin, {roll}},
     {"then", builtin, {donothing}},
     {"depth", builtin, {depth}},
-    {".s", builtin, {stack_printall}},
-    {"clearstack", builtin, {stack_clear}},
+    {".s", builtin, {printall}},
+    {"clearstack", builtin, {clearstack}},
     {"if", directive, {ifdirective}},
     {":", directive, {defineop}},
 };
-
-//static int optable->len = 26;
 #pragma clang diagnostic pop
 
 compileditem* optable_compilewords(optable* ot, int len, char** script) {
@@ -126,16 +130,19 @@ wordop* optable_getop(optable* optable, char *word) {
 
 /* Implementations of builtin functions */
 
-static void not(stack *s) {
+static void not(forthmachine* fm) {
+    stack* s = fm->s;
     int x = stack_pop(s);
     stack_push(s, !x);
 }
 
-static void drop(stack *s) {
+static void drop(forthmachine* fm) {
+    stack* s = fm->s;
     stack_pop(s);
 }
 
-static void over(stack *s) {
+static void over(forthmachine* fm) {
+    stack* s = fm->s;
     int x = stack_pop(s);
     int y = stack_pop(s);
     stack_push(s, y);
@@ -143,7 +150,8 @@ static void over(stack *s) {
     stack_push(s, y);
 }
 
-static void rot(stack *s) {
+static void rot(forthmachine* fm) {
+    stack* s = fm->s;
     int x = stack_pop(s);
     int y = stack_pop(s);
     int z = stack_pop(s);
@@ -152,93 +160,97 @@ static void rot(stack *s) {
     stack_push(s, z);
 }
 
-static void swap(stack *s) {
+static void swap(forthmachine* fm) {
+    stack* s = fm->s;
     int x = stack_pop(s);
     int y = stack_pop(s);
     stack_push(s, x);
     stack_push(s, y);
 }
 
-static void eq(stack *s) {
+static void eq(forthmachine* fm) {
+    stack* s = fm->s;
     int x = stack_pop(s);
     int y = stack_pop(s);
     stack_push(s, x == y);
 }
 
-static void add(stack *s) {
+static void add(forthmachine* fm) {
+    stack* s = fm->s;
     int x = stack_pop(s);
     int y = stack_pop(s);
     stack_push(s, x + y);
 }
 
-static void mult(stack *s) {
+static void mult(forthmachine* fm) {
+    stack* s = fm->s;
     int x = stack_pop(s);
     int y = stack_pop(s);
     stack_push(s, x * y);
 }
 
-static void s_div(stack *s) {
+static void s_div(forthmachine* fm) {
+    stack* s = fm->s;
     int x = stack_pop(s);
     int y = stack_pop(s);
     stack_push(s, y / x);
 }
 
-static void mod(stack *s) {
+static void mod(forthmachine* fm) {
+    stack* s = fm->s;
     int x = stack_pop(s);
     int y = stack_pop(s);
     stack_push(s, y % x);
 }
 
-static void sub(stack *s) {
+static void sub(forthmachine* fm) {
+    stack* s = fm->s;
     int x = stack_pop(s);
     int y = stack_pop(s);
     stack_push(s, y - x);
 }
 
-static void dup(stack *s) {
+static void dup(forthmachine* fm) {
+    stack* s = fm->s;
     int x = stack_pop(s);
     stack_push(s, x);
     stack_push(s, x);
 }
 
-//#ifdef __EMSCRIPTEN__
-int outputline = 0;
-char* outputbuffer;
-//#endif
 
-static void popout(stack *s) {
-if (outputbuffer) {
+static void forthmachine_output(forthmachine* fm, stackitem v) {
+if (fm->outputbuffer) {
     char x[WORD_LEN_LIMIT];
-    sprintf(x, "%d\n", stack_pop(s));
-    strcat(outputbuffer, x);
-    outputline++;
+    sprintf(x, "%d\n", v);
+    strcat(fm->outputbuffer, x); // TODO: fix: UNSAFE!
 } else {
-    printf("%d\n", stack_pop(s));
+    printf("%d\n", v);
 }
 }
 
-static void peekout(stack *s) {
+static void popout(forthmachine* fm) {
+    stack* s = fm->s;
+    forthmachine_output(fm, stack_pop(s));
+}
+
+static void peekout(forthmachine* fm) {
+    stack* s = fm->s;
     int x = stack_pop(s);
     stack_push(s, x);
-if (outputbuffer) {
-    char y[WORD_LEN_LIMIT];
-    sprintf(y, "%d\n", x);
-    strcat(outputbuffer, y);
-    outputline++;
-} else {
-    printf("%d\n", x);
-}
+    forthmachine_output(fm, x);
 }
 
-static void donothing(stack *s) {
+static void donothing(forthmachine* fm) {
     // Do nothing at all (i.e. discard token)
 }
 
-static void depth(stack *s) {
+static void depth(forthmachine* fm) {
+    stack* s = fm->s;
     stack_push(s, stack_depth(s));
 }
 
-static void max(stack *s) {
+static void max(forthmachine* fm) {
+    stack* s = fm->s;
     int x = stack_pop(s);
     int y = stack_pop(s);
     if (x > y) {
@@ -248,7 +260,8 @@ static void max(stack *s) {
     }
 }
 
-static void min(stack *s) {
+static void min(forthmachine* fm) {
+    stack* s = fm->s;
     int x = stack_pop(s);
     int y = stack_pop(s);
     if (x < y) {
@@ -258,18 +271,35 @@ static void min(stack *s) {
     }
 }
 
-static void negate(stack *s) {
+static void negate(forthmachine* fm) {
+    stack* s = fm->s;
     stack_push(s, 0 - stack_pop(s));
 }
 
-static void s_abs(stack *s) {
+static void s_abs(forthmachine* fm) {
+    stack* s = fm->s;
     int x = stack_pop(s);
     stack_push(s, x < 0 ? 0 - x : x);
 }
 
+static void printall(forthmachine* fm) {
+    stack_tostringappend(fm->s, MAX_OUTPUT_BUFFER_SIZE, fm->outputbuffer);
+}
+
+static void pick(forthmachine* fm) {
+    stack_pick(fm->s);
+}
+static void roll(forthmachine* fm) {
+    stack_roll(fm->s);
+}
+static void clearstack(forthmachine* fm) {
+    stack_clear(fm->s);
+}
+
 /* Directives */
 
-static void ifdirective(stack *s, int len, char* line, int* starti, optable* ot_IDNORED) {
+static void ifdirective(forthmachine* fm, int len, char* line, int* starti) {
+    stack* s = fm->s;
     int i = *starti;
     stackitem predicate = stack_pop(s);
     if (!predicate) {
@@ -294,7 +324,8 @@ static void ifdirective(stack *s, int len, char* line, int* starti, optable* ot_
  * returns new position of input index
  *
  */
-static void defineop(stack* s_IGNORED, int len_IGNORED, char *input, int* starti, optable* optable) {
+static void defineop(forthmachine* fm, int len_IGNORED, char *input, int* starti) {
+    optable* optable = fm->ot;
     // value easier to deal with (than pointer)
     int i = *starti;
     // name by which the function will be called

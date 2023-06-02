@@ -23,7 +23,7 @@ void stack_push(stack *s, stackitem si);
 
 int stack_depth(stack *s);
 
-void stack_printall(stack *s);
+void stack_tostringappend(stack* s, int sbmaxlen, char* sb);
 
 void stack_roll(stack *s);
 
