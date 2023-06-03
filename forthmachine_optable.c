@@ -30,6 +30,8 @@ static void printall(forthmachine* fm);
 static void pick(forthmachine* fm);
 static void roll(forthmachine* fm);
 static void clearstack(forthmachine* fm);
+static void doloopstart(forthmachine* fm);
+static void lcsindex(forthmachine* fm);
 
 const static wordop inittable[] = {
     {".", optype_builtin, {popout}},
@@ -56,6 +58,8 @@ const static wordop inittable[] = {
     {"depth", optype_builtin, {depth}},
     {".s", optype_builtin, {printall}},
     {"clearstack", optype_builtin, {clearstack}},
+    {"do", optype_builtin, {doloopstart}},
+    {"i", optype_builtin, {lcsindex}},
 };
 
 
@@ -280,6 +284,17 @@ static void clearstack(forthmachine* fm) {
     stack_clear(fm->s);
 }
 
+static void doloopstart(forthmachine* fm) {
+    int index = stack_pop(fm->s);
+    int limit = stack_pop(fm->s);
+    stack_push(fm->lcs, limit);
+    stack_push(fm->lcs, index);
+}
+
+static void lcsindex(forthmachine* fm) {
+    stack_push(fm->s, stack_peek(fm->lcs));
+}
+
 /* Directives */
 
 /**
@@ -318,7 +333,8 @@ void optable_defineop(optable* optable, char *input, int* starti) {
     // get code
     int wordi = 0;
     char wordbuf[WORD_LEN_LIMIT];
-    stack* ifcounter = stack_new(NULL);
+    stack* ifcounter = stack_new(optable->errorhandler);
+    stack* doloopcounter = stack_new(optable->errorhandler);
     while (input[i] != ';' && opsi < DEFINED_FUNC_MAX_LENGTH) {
         char c = input[i++];
         if (notdelim(c) && wordi < WORD_LEN_LIMIT) {
@@ -333,6 +349,10 @@ void optable_defineop(optable* optable, char *input, int* starti) {
             } else if (0 == strcmp(wordbuf, "then")) {
                 int ifopi = stack_pop(ifcounter);
                 oplist[ifopi].jumpto = opsi;
+            } else if (0 == strcmp(wordbuf, "loop")) {
+                oplist[opsi].type = compileditem_doloopcontrol;
+                oplist[opsi].loopbackto = stack_pop(doloopcounter);
+                opsi++;
             } else if (0 == strcmp(wordbuf, opcode)) {
                 oplist[opsi].type = compileditem_stackop;
                 oplist[opsi].wordop = &optable->optable[optable->len];
@@ -343,6 +363,9 @@ void optable_defineop(optable* optable, char *input, int* starti) {
                 if (wordop) {
                     oplist[opsi].type = compileditem_stackop;
                     oplist[opsi].wordop = wordop;
+                    if (0 == strcmp(wordbuf, "do")) {
+                        stack_push(doloopcounter, opsi+1);
+                    }
                 } else {
                     oplist[opsi].type = compileditem_literal;
                     oplist[opsi].literal = atoi(wordbuf);
@@ -353,6 +376,7 @@ void optable_defineop(optable* optable, char *input, int* starti) {
         }
     }
     stack_free(ifcounter);
+    stack_free(doloopcounter);
 
     wordop* existingop = optable_getop(optable, opcode);
     if (existingop) {

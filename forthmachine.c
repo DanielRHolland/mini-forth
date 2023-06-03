@@ -11,8 +11,9 @@ forthmachine* forthmachine_new(errorhandler errorhandler) {
     fm->ot = optable_new(errorhandler);
     fm->s = stack_new(errorhandler);
     fm->outputbuffer = (char*)malloc(sizeof(char) * MAX_OUTPUT_BUFFER_SIZE);
-    fm->errorhandler = errorhandler;
     strcpy(fm->outputbuffer, "");
+    fm->errorhandler = errorhandler;
+    fm->lcs = stack_new(errorhandler);
     return fm;
 }
 
@@ -36,6 +37,18 @@ static void op_exec(wordop* op, forthmachine* fm) {
                             int jumpto = op->oplist[j].jumpto;
                             if (!si && jumpto != -1) {
                                 j = jumpto - 1;
+                            }
+                            break;
+                        }
+                    case compileditem_doloopcontrol:
+                        {
+                            int index = stack_pop(fm->lcs);
+                            int limit = stack_pop(fm->lcs);
+                            index++;
+                            if (index < limit) {
+                                j = op->oplist[j].loopbackto - 1;
+                                stack_push(fm->lcs, limit);
+                                stack_push(fm->lcs, index);
                             }
                             break;
                         }

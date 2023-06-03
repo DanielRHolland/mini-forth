@@ -21,6 +21,7 @@ typedef enum {
     compileditem_stackop = 0,
     compileditem_literal = 1,
     compileditem_ifcontrol = 2,
+    compileditem_doloopcontrol = 3,
 } compileditem_type;
 
 typedef struct {
@@ -31,6 +32,7 @@ typedef struct {
         struct {
             int jumpto;
         };
+        int loopbackto;
     };
 } compileditem;
 
@@ -72,6 +74,7 @@ struct forthmachine {
     stack* s;
     char* outputbuffer;
     errorhandler errorhandler;
+    stack* lcs;
 };
 
 #define MAX_OUTPUT_BUFFER_SIZE 1024
