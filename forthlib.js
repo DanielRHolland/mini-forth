@@ -1098,7 +1098,6 @@ function dbg(text) {
       abortOnCannotGrowMemory(requestedSize);
     }
 
-  
   var UTF8Decoder = typeof TextDecoder != 'undefined' ? new TextDecoder('utf8') : undefined;
   
     /**
@@ -1182,31 +1181,6 @@ function dbg(text) {
         var ret = UTF8ToString(ptr);
         return ret;
       }};
-  function _proc_exit(code) {
-      EXITSTATUS = code;
-      if (!keepRuntimeAlive()) {
-        if (Module['onExit']) Module['onExit'](code);
-        ABORT = true;
-      }
-      quit_(code, new ExitStatus(code));
-    }
-  /** @suppress {duplicate } */
-  /** @param {boolean|number=} implicit */
-  function exitJS(status, implicit) {
-      EXITSTATUS = status;
-  
-      checkUnflushedContent();
-  
-      // if exit() was called explicitly, warn the user if the runtime isn't actually being shut down
-      if (keepRuntimeAlive() && !implicit) {
-        var msg = `program exited (with status: ${status}), but keepRuntimeAlive() is set (counter=${runtimeKeepaliveCounter}) due to an async operation, so halting execution but not exiting the runtime or preventing further async execution (you can use emscripten_force_exit, if you want to force a true shutdown)`;
-        err(msg);
-      }
-  
-      _proc_exit(status);
-    }
-  var _exit = exitJS;
-
   function _fd_close(fd) {
       abort('fd_close called without SYSCALLS_REQUIRE_FILESYSTEM');
     }
@@ -1415,7 +1389,6 @@ function checkIncomingModuleAPI() {
 var wasmImports = {
   "emscripten_memcpy_big": _emscripten_memcpy_big,
   "emscripten_resize_heap": _emscripten_resize_heap,
-  "exit": _exit,
   "fd_close": _fd_close,
   "fd_seek": _fd_seek,
   "fd_write": _fd_write
@@ -1470,6 +1443,7 @@ var dynCall_jiji = Module["dynCall_jiji"] = createExportWrapper("dynCall_jiji");
 Module["ccall"] = ccall;
 var missingLibrarySymbols = [
   'zeroMemory',
+  'exitJS',
   'emscripten_realloc_buffer',
   'isLeapYear',
   'ydayFromDate',
@@ -1677,7 +1651,6 @@ var unexportedSymbols = [
   'writeStackCookie',
   'checkStackCookie',
   'ptrToString',
-  'exitJS',
   'getHeapMax',
   'abortOnCannotGrowMemory',
   'ENV',
