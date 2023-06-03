@@ -13,12 +13,8 @@ typedef struct optable optable;
 typedef struct wordop wordop;
 typedef struct forthmachine forthmachine;
 
-
 typedef void (*stackop)(forthmachine* fm);
 typedef void (*directiveop)(forthmachine* fm, int len, char* line, int* i);
-
-extern char* outputbuffer;
-extern int outputline;
 
 typedef enum {
     compileditem_stackop = 0,
@@ -38,8 +34,8 @@ typedef struct {
 } compileditem;
 
 typedef enum {
-    builtin = 0,
-    compiled = 1,
+    optype_builtin = 0,
+    optype_compiled = 1,
 } optype;
 
 struct wordop {

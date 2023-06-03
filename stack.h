@@ -12,7 +12,6 @@ typedef struct {
     stackitem* start;
 } stack;
 
-
 stack* stack_new();
 
 void stack_free(stack* s);

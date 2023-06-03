@@ -31,30 +31,30 @@ static void roll(forthmachine* fm);
 static void clearstack(forthmachine* fm);
 
 const static wordop inittable[] = {
-    {".", builtin, {popout}},
-    {"peek", builtin, {peekout}},
-    {"+", builtin, {add}},
-    {"-", builtin, {sub}},
-    {"*", builtin, {mult}},
-    {"/", builtin, {s_div}},
-    {"negate", builtin, {negate}},
-    {"abs", builtin, {s_abs}},
-    {"mod", builtin, {mod}},
-    {"max", builtin, {max}},
-    {"min", builtin, {min}},
-    {"dup", builtin, {dup}},
-    {"not", builtin, {not}},
-    {"=", builtin, {eq}},
-    {"swap", builtin, {swap}},
-    {"drop", builtin, {drop}},
-    {"over", builtin, {over}},
-    {"rot", builtin, {rot}},
-    {"pick", builtin, {pick}},
-    {"roll", builtin, {roll}},
-    {"then", builtin, {donothing}},
-    {"depth", builtin, {depth}},
-    {".s", builtin, {printall}},
-    {"clearstack", builtin, {clearstack}},
+    {".", optype_builtin, {popout}},
+    {"peek", optype_builtin, {peekout}},
+    {"+", optype_builtin, {add}},
+    {"-", optype_builtin, {sub}},
+    {"*", optype_builtin, {mult}},
+    {"/", optype_builtin, {s_div}},
+    {"negate", optype_builtin, {negate}},
+    {"abs", optype_builtin, {s_abs}},
+    {"mod", optype_builtin, {mod}},
+    {"max", optype_builtin, {max}},
+    {"min", optype_builtin, {min}},
+    {"dup", optype_builtin, {dup}},
+    {"not", optype_builtin, {not}},
+    {"=", optype_builtin, {eq}},
+    {"swap", optype_builtin, {swap}},
+    {"drop", optype_builtin, {drop}},
+    {"over", optype_builtin, {over}},
+    {"rot", optype_builtin, {rot}},
+    {"pick", optype_builtin, {pick}},
+    {"roll", optype_builtin, {roll}},
+    {"then", optype_builtin, {donothing}},
+    {"depth", optype_builtin, {depth}},
+    {".s", optype_builtin, {printall}},
+    {"clearstack", optype_builtin, {clearstack}},
 };
 
 
@@ -76,7 +76,7 @@ static compileditem* optable_compilewords(optable* ot, int len, char** script) {
 void optable_addop(optable* ot, char* name, int len, char** words) {
     ot->optable[ot->len].word = malloc(sizeof(name));
     strcpy(ot->optable[ot->len].word, name);
-    ot->optable[ot->len].optype = compiled;
+    ot->optable[ot->len].optype = optype_compiled;
     ot->optable[ot->len].oplistlen = len;
     compileditem* oplist = optable_compilewords(ot, len, words);
     ot->optable[ot->len].oplist = oplist;
@@ -353,12 +353,11 @@ void optable_defineop(optable* optable, char *input, int* starti) {
     stack_free(ifcounter);
 
     wordop* existingop = optable_getop(optable, opcode);
-
     if (existingop) {
-        if (existingop->optype == compiled && existingop->oplist) {
+        if (existingop->optype == optype_compiled && existingop->oplist) {
             free(existingop->oplist);
         }
-        existingop->optype = compiled;
+        existingop->optype = optype_compiled;
         existingop->oplist = oplist;
         existingop->oplistlen = opsi;
     } else {
@@ -370,7 +369,7 @@ void optable_defineop(optable* optable, char *input, int* starti) {
         }
         // add op to end of table, and increment size
         optable->optable[optable->len].word = opcode;
-        optable->optable[optable->len].optype = compiled;
+        optable->optable[optable->len].optype = optype_compiled;
         optable->optable[optable->len].oplist = oplist; 
         optable->optable[optable->len].oplistlen = opsi;
         optable->len++;

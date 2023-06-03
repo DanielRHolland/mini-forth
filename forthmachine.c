@@ -16,10 +16,10 @@ forthmachine* forthmachine_new() {
 
 static void op_exec(wordop* op, forthmachine* fm) {
     switch (op->optype) {
-        case builtin:
+        case optype_builtin:
             op->op(fm);
             break;
-        case compiled:
+        case optype_compiled:
             for (int j = 0; j < op->oplistlen; j++) {
                 switch (op->oplist[j].type) {
                     case compileditem_literal:
