@@ -1,0 +1,20 @@
+INPUT
+: timestables 5 1  do i 5 1 do dup i * .  loop loop drop ;
+timestables
+OUTPUT
+1
+2
+3
+4
+2
+4
+6
+8
+3
+6
+9
+12
+4
+8
+12
+16
