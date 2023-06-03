@@ -316,7 +316,7 @@ void optable_defineop(optable* optable, char *input, int* starti) {
     // get code
     int wordi = 0;
     char wordbuf[WORD_LEN_LIMIT];
-    stack* ifcounter = stack_new();
+    stack* ifcounter = stack_new(NULL);
     while (input[i] != ';' && opsi < DEFINED_FUNC_MAX_LENGTH) {
         char c = input[i++];
         if (notdelim(c) && wordi < WORD_LEN_LIMIT) {

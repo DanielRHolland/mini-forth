@@ -2,14 +2,16 @@
 #include <stdio.h>
 #include <string.h>
 #include "drhstrings.h"
+#include "errorhandler.h"
 #include "stack.h"
 /****/
 
-forthmachine* forthmachine_new() {
+forthmachine* forthmachine_new(errorhandler errorhandler) {
     forthmachine* fm = (forthmachine*)malloc(sizeof(forthmachine));
     fm->ot = optable_new();
-    fm->s = stack_new();
+    fm->s = stack_new(errorhandler);
     fm->outputbuffer = (char*)malloc(sizeof(char) * MAX_OUTPUT_BUFFER_SIZE);
+    fm->errorhandler = errorhandler;
     strcpy(fm->outputbuffer, "");
     return fm;
 }

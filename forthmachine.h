@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include "stack.h"
+#include "errorhandler.h"
 
 
 #define OPTABLE_MAX_SIZE 1024
@@ -69,11 +70,12 @@ struct forthmachine {
     optable* ot;
     stack* s;
     char* outputbuffer;
+    errorhandler errorhandler;
 };
 
 #define MAX_OUTPUT_BUFFER_SIZE 1024
 
-forthmachine* forthmachine_new();
+forthmachine* forthmachine_new(errorhandler errorhandler);
 void forthmachine_eval(forthmachine* fm, int len, char* line);
 
 #endif //OPTABLE_H

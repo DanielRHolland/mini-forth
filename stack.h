@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include "errorhandler.h"
 
 #ifndef STACK_H
 #define STACK_H
@@ -10,9 +11,10 @@ typedef struct {
     int size;
     int maxsize;
     stackitem* start;
+    errorhandler errorhandler;
 } stack;
 
-stack* stack_new();
+stack* stack_new(errorhandler errorhandler);
 
 void stack_free(stack* s);
 

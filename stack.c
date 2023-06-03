@@ -1,13 +1,15 @@
 #include "stack.h"
+#include "errorhandler.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-stack* stack_new() {
+stack* stack_new(errorhandler errorhandler) {
     stack* s = (stack*)malloc(sizeof(stack));
     s->size = 0;
     s->maxsize = 1024;
     s->start = (stackitem*)malloc(sizeof(stackitem) * s->maxsize);
+    s->errorhandler = errorhandler;
     return s;
 }
 
@@ -16,9 +18,13 @@ void stack_free(stack* s) {
     free(s);
 }
 
-void exitunderflow() {
-    fprintf(stderr, "Error Stack Underflow");
-    exit(1);
+
+#define ERROR_STACK_EMPTY_CANNOT_POP "Error: Cannot pop from an empty stack"
+#define ERROR_STACK_OVERFLOW "Error: Stack Overflow"
+#define ERROR_OUTPUT_BUFFER_OVERFLOW "Error: Output would overflow buffer if printed"
+
+static void stack_handleerror(stack* s, char* errormessage) {
+    s->errorhandler(errormessage);
 }
 
 stackitem stack_pop(stack* s) {
@@ -28,7 +34,7 @@ stackitem stack_pop(stack* s) {
         return si;
     } else {
         // tried to pop empty stack
-        exitunderflow();
+        stack_handleerror(s, ERROR_STACK_EMPTY_CANNOT_POP);
         return 0;
     }
 }
@@ -38,7 +44,7 @@ stackitem stack_peek(stack* s) {
         return s->start[s->size - 1];
     } else {
         // tried to pop empty stack
-        exitunderflow();
+        stack_handleerror(s, ERROR_STACK_EMPTY_CANNOT_POP);
         return 0;
     }
 }
@@ -46,8 +52,7 @@ stackitem stack_peek(stack* s) {
 void stack_push(stack *s, stackitem si) {
 //        fprintf(stderr, "pushing %d", si);
     if (s->size >= s->maxsize) {
-        fprintf(stderr, "Error: Stack Overflow");
-        exit(1);
+        stack_handleerror(s, ERROR_STACK_OVERFLOW);
     } else {
         s->start[s->size] = si;
         s->size = s->size + 1;
@@ -64,21 +69,18 @@ int stack_depth(stack* s) {
 void stack_tostringappend(stack* s, int sbmaxlen, char* sb) {
     int i = strlen(sb);
     if (i >= sbmaxlen) {
-        fprintf(stderr, "Error: Output would overflow buffer if printed");
-        exit(0); 
+        stack_handleerror(s, ERROR_OUTPUT_BUFFER_OVERFLOW);
     }
     sprintf(&(sb[i]), "<%d>", s->size);
     i = strlen(sb);
     if (i >= sbmaxlen) {
-        fprintf(stderr, "Error: Output would overflow Buffer if printed");
-        exit(0); 
+        stack_handleerror(s, ERROR_OUTPUT_BUFFER_OVERFLOW);
     }
     for (int j = 0; j < s->size; j++) {
         sprintf(&(sb[i]), " %d", s->start[j]);
         i = strlen(sb);
         if (i >= sbmaxlen) {
-            fprintf(stderr, "Error: Output would overflow Buffer if printed");
-            exit(0); 
+            stack_handleerror(s, ERROR_OUTPUT_BUFFER_OVERFLOW);
         }
     }
     sprintf(&(sb[i]), "\n");
@@ -96,7 +98,7 @@ void stack_roll(stack* s) {
         s->start[i] = newtop;
     } else {
         // tried to pop empty stack
-        exitunderflow();
+        stack_handleerror(s, ERROR_STACK_EMPTY_CANNOT_POP);
     }
 }
 
@@ -107,7 +109,7 @@ void stack_pick(stack *s) {
         stack_push(s, s->start[maxindex - posfromtop]);
     } else {
         // tried to pop empty stack
-        exitunderflow();
+        stack_handleerror(s, ERROR_STACK_EMPTY_CANNOT_POP);
     }
 }
 
