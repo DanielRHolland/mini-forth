@@ -8,7 +8,7 @@
 
 forthmachine* forthmachine_new(errorhandler errorhandler) {
     forthmachine* fm = (forthmachine*)malloc(sizeof(forthmachine));
-    fm->ot = optable_new();
+    fm->ot = optable_new(errorhandler);
     fm->s = stack_new(errorhandler);
     fm->outputbuffer = (char*)malloc(sizeof(char) * MAX_OUTPUT_BUFFER_SIZE);
     fm->errorhandler = errorhandler;

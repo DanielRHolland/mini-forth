@@ -54,6 +54,7 @@ struct wordop {
 struct optable {
     int len;
     wordop* optable;
+    errorhandler errorhandler;
 };
 
 /**
@@ -64,7 +65,7 @@ wordop* optable_getop(optable* optable, char *word);
 
 void optable_defineop(optable* optable, char *input, int* starti);
 
-optable* optable_new();
+optable* optable_new(errorhandler errorhandler);
 
 struct forthmachine {
     optable* ot;

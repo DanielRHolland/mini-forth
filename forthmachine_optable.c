@@ -1,3 +1,4 @@
+#include "errorhandler.h"
 #include "forthmachine.h"
 #include <stdbool.h>
 #include <stdio.h>
@@ -83,12 +84,13 @@ void optable_addop(optable* ot, char* name, int len, char** words) {
     ot->len++;
 }
 
-optable* optable_new() {
+optable* optable_new(errorhandler errorhandler) {
     optable* ot = malloc(sizeof(optable));
     ot->optable = malloc(sizeof(wordop) * OPTABLE_MAX_SIZE);
     int inittablesize = sizeof(inittable);
     ot->len = inittablesize / sizeof(*inittable);
     memcpy(ot->optable, inittable, inittablesize);
+    ot->errorhandler = errorhandler;
 
     char* defs[] = {
         ": nip swap drop ;",
@@ -363,9 +365,8 @@ void optable_defineop(optable* optable, char *input, int* starti) {
     } else {
         // optable->optable bounds check 
         if (optable->len >= OPTABLE_MAX_SIZE) {
-            // Error
-            fprintf(stderr, "Error: optable->optable reached max size, failed to create new user defined operation");
-            exit(1);
+            optable->errorhandler("Error: optable->optable reached max size, failed to create new user defined operation");
+            return;
         }
         // add op to end of table, and increment size
         optable->optable[optable->len].word = opcode;
