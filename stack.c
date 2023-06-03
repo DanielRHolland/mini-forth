@@ -11,6 +11,11 @@ stack* stack_new() {
     return s;
 }
 
+void stack_free(stack* s) {
+    free(s->start);
+    free(s);
+}
+
 void exitunderflow() {
     fprintf(stderr, "Error Stack Underflow");
     exit(1);

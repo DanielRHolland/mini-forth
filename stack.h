@@ -15,6 +15,8 @@ typedef struct {
 
 stack* stack_new();
 
+void stack_free(stack* s);
+
 stackitem stack_pop(stack* s);
 
 stackitem stack_peek(stack* s);

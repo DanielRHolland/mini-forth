@@ -25,18 +25,11 @@ static void popout(forthmachine* fm);
 static void peekout(forthmachine* fm);
 static void donothing(forthmachine* fm);
 static void depth(forthmachine* fm);
-
 static void printall(forthmachine* fm);
 static void pick(forthmachine* fm);
 static void roll(forthmachine* fm);
 static void clearstack(forthmachine* fm);
 
-static void ifdirective(forthmachine* fm, int len, char* line, int* i);
-static void defineop(forthmachine* fm, int len, char* line, int* i);
-
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wincompatible-function-pointer-types"
-// clang seems to not realise that the union can contain fp types beyond the first
 const static wordop inittable[] = {
     {".", builtin, {popout}},
     {"peek", builtin, {peekout}},
@@ -62,20 +55,18 @@ const static wordop inittable[] = {
     {"depth", builtin, {depth}},
     {".s", builtin, {printall}},
     {"clearstack", builtin, {clearstack}},
-    {"if", directive, {ifdirective}},
-    {":", directive, {defineop}},
 };
-#pragma clang diagnostic pop
 
-compileditem* optable_compilewords(optable* ot, int len, char** script) {
+
+static compileditem* optable_compilewords(optable* ot, int len, char** script) {
     compileditem* oplist = malloc(sizeof(compileditem) * len);
     for (int i = 0; i < len; i++) {
         wordop* wordop = optable_getop(ot, script[i]);
         if (wordop) {
-            oplist[i].isliteral = false;
+            oplist[i].type = compileditem_stackop;
             oplist[i].wordop = wordop;
         } else {
-            oplist[i].isliteral = true;
+            oplist[i].type = compileditem_literal;
             oplist[i].literal = atoi(script[i]);
         }
     }
@@ -294,24 +285,6 @@ static void clearstack(forthmachine* fm) {
 
 /* Directives */
 
-static void ifdirective(forthmachine* fm, int len, char* line, int* starti) {
-    stack* s = fm->s;
-    int i = *starti;
-    stackitem predicate = stack_pop(s);
-    if (!predicate) {
-        while (len > i && i >= 4 && !(
-                    line[i-4] == 't' &&
-                    line[i-3] == 'h' &&
-                    line[i-2] == 'e' &&
-                    line[i-1] == 'n'
-                    )) {
-            i++;
-        }
-    }
-    *starti = i;
-}
-
-
 /**
  * defineop reads a function identifier, followed by the commands to run when the function
  *      is called, stopping when a semicolon is reached.
@@ -320,7 +293,7 @@ static void ifdirective(forthmachine* fm, int len, char* line, int* starti) {
  * returns new position of input index
  *
  */
-static void defineop(forthmachine* fm, int len_IGNORED, char *input, int* starti) {
+void defineop(forthmachine* fm, char *input, int* starti) {
     optable* optable = fm->ot;
     // value easier to deal with (than pointer)
     int i = *starti;
@@ -328,10 +301,7 @@ static void defineop(forthmachine* fm, int len_IGNORED, char *input, int* starti
     char* opcode = malloc(sizeof(char) * WORD_LEN_LIMIT);
     int opcodei = 0;
 
-    // code to be evaluated when function is called
-    char* funcscript = malloc(sizeof(char) * DEFINED_FUNC_MAX_LENGTH);
-    int funcscripti = 0;
-    
+
     // skip ' ' and ':'
     while (input[i] == ' ' || input[i] == ':') {
         i++;
@@ -343,11 +313,50 @@ static void defineop(forthmachine* fm, int len_IGNORED, char *input, int* starti
     }
     opcode[opcodei] = '\0';
 
+
+    // code to be evaluated when function is called
+    
+    compileditem* oplist = malloc(sizeof(compileditem) * DEFINED_FUNC_MAX_LENGTH);
+    int opsi = 0;
+
     // get code
-    while (input[i] != ';' && funcscripti < DEFINED_FUNC_MAX_LENGTH) {
-        funcscript[funcscripti++] = input[i++];
+    int wordi = 0;
+    char wordbuf[WORD_LEN_LIMIT];
+    stack* ifcounter = stack_new();
+    while (input[i] != ';' && opsi < DEFINED_FUNC_MAX_LENGTH) {
+        char c = input[i++];
+        if (notdelim(c) && wordi < WORD_LEN_LIMIT) {
+            wordbuf[wordi++] = c;
+        } else if (wordi > 0) {
+            wordbuf[wordi] = '\0';
+            if (0 == strcmp(wordbuf, "if")) {
+                oplist[opsi].type = compileditem_ifcontrol;
+                oplist[opsi].jumpto = -1;
+                stack_push(ifcounter, opsi);
+                opsi++;
+            } else if (0 == strcmp(wordbuf, "then")) {
+                int ifopi = stack_pop(ifcounter);
+                oplist[ifopi].jumpto = opsi;
+            } else if (0 == strcmp(wordbuf, opcode)) {
+                oplist[opsi].type = compileditem_stackop;
+                oplist[opsi].wordop = &optable->optable[optable->len];
+                opsi++;
+            } 
+            else {
+                wordop* wordop = optable_getop(optable, wordbuf);
+                if (wordop) {
+                    oplist[opsi].type = compileditem_stackop;
+                    oplist[opsi].wordop = wordop;
+                } else {
+                    oplist[opsi].type = compileditem_literal;
+                    oplist[opsi].literal = atoi(wordbuf);
+                }
+                opsi++;
+            }
+            wordi = 0;
+        }
     }
-    funcscript[funcscripti] = '\0';
+    stack_free(ifcounter);
 
     // optable->optable bounds check 
     if (optable->len >= OPTABLE_MAX_SIZE) {
@@ -357,9 +366,9 @@ static void defineop(forthmachine* fm, int len_IGNORED, char *input, int* starti
     }
     // add op to end of table, and increment size
     optable->optable[optable->len].word = opcode;
-    optable->optable[optable->len].optype = script;
-    optable->optable[optable->len].script = funcscript;
-    optable->optable[optable->len].scriptlen = funcscripti;
+    optable->optable[optable->len].optype = compiled;
+    optable->optable[optable->len].oplist = oplist; 
+    optable->optable[optable->len].oplistlen = opsi;
     optable->len++;
 
     // move read position forwards

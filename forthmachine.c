@@ -1,6 +1,8 @@
 #include "forthmachine.h"
+#include <stdio.h>
 #include <string.h>
 #include "drhstrings.h"
+#include "stack.h"
 /****/
 
 forthmachine* forthmachine_new() {
@@ -12,23 +14,29 @@ forthmachine* forthmachine_new() {
     return fm;
 }
 
-static void op_exec(wordop* op, forthmachine* fm, char *word, int len, char* line, int* i) {
+static void op_exec(wordop* op, forthmachine* fm) {
     switch (op->optype) {
-        case script:
-            forthmachine_eval(fm, op->scriptlen, op->script);
-            break;
         case builtin:
             op->op(fm);
             break;
-        case directive:
-            op->directive(fm, len, line, i);
-            break;
         case compiled:
             for (int j = 0; j < op->oplistlen; j++) {
-                if (op->oplist[j].isliteral) {
-                    stack_push(fm->s, op->oplist[j].literal);
-                } else {
-                    op_exec(op->oplist[j].wordop, fm, word, len, line, i);
+                switch (op->oplist[j].type) {
+                    case compileditem_literal:
+                        stack_push(fm->s, op->oplist[j].literal);
+                        break;
+                    case compileditem_stackop:
+                        op_exec(op->oplist[j].wordop, fm);
+                        break;
+                    case compileditem_ifcontrol:
+                        {
+                            stackitem si = stack_pop(fm->s);
+                            int jumpto = op->oplist[j].jumpto;
+                            if (!si && jumpto != -1) {
+                                j = jumpto - 1;
+                            }
+                            break;
+                        }
                 }
             }
             break;
@@ -36,9 +44,13 @@ static void op_exec(wordop* op, forthmachine* fm, char *word, int len, char* lin
 }
 
 static void forthmachine_exec(forthmachine* fm, char *word, int len, char* line, int* i) {
+    if (0 == strcmp(word, ":")) {
+        defineop(fm, line, i);
+        return;
+    }
     wordop* op = optable_getop(fm->ot, word);
     if (op) {
-        op_exec(op, fm, word, len, line, i);
+        op_exec(op, fm);
     } else if (isnumber(word)) {
         stack_push(fm->s, atoi(word));
     }

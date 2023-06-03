@@ -20,31 +20,33 @@ typedef void (*directiveop)(forthmachine* fm, int len, char* line, int* i);
 extern char* outputbuffer;
 extern int outputline;
 
+typedef enum {
+    compileditem_stackop = 0,
+    compileditem_literal = 1,
+    compileditem_ifcontrol = 2,
+} compileditem_type;
+
 typedef struct {
-    bool isliteral;
+    compileditem_type type;
     union {
         wordop* wordop;
         stackitem literal;
+        struct {
+            int jumpto;
+        };
     };
 } compileditem;
 
 typedef enum {
-    directive = 0,
-    builtin = 1,
-    script = 2,
-    compiled = 3,
+    builtin = 0,
+    compiled = 1,
 } optype;
 
 struct wordop {
     char* word;
     optype optype;
     union {
-        directiveop directive;
         stackop op;
-        struct {
-            char* script;
-            int scriptlen;
-        };
         struct {
             compileditem* oplist;
             int oplistlen;
@@ -62,6 +64,8 @@ struct optable {
  *      if none exist, returns 0
  */
 wordop* optable_getop(optable* optable, char *word);
+
+void defineop(forthmachine* fm, char *input, int* starti);
 
 optable* optable_new();
 
