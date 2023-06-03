@@ -90,22 +90,17 @@ optable* optable_new() {
     ot->len = inittablesize / sizeof(*inittable);
     memcpy(ot->optable, inittable, inittablesize);
 
-    typedef struct {
-        char* name;
-        int len;
-        char** words;
-    } tocompile;
-    tocompile defs[] = {
-        {"nip", 2, (char*[]){"swap","drop"}},
-        {"tuck", 3, (char*[]){"dup", "rot", "rot"}},
-        {"incr", 2, (char*[]){"1", "+"}},
+    char* defs[] = {
+        ": nip swap drop ;",
+        ": tuck dup rot rot ;",
+        ": incr 1 + ;",
     };
+
     int defslen = sizeof(defs) / sizeof(*defs);
     for (int i = 0; i < defslen; i++) {
-        tocompile d = defs[i];
-        char* nm = defs[i].name;
-        char** ws = d.words;
-        optable_addop(ot,nm, d.len,ws);
+        char* d = defs[i];
+        int x = 0;
+        optable_defineop(ot, d, &x);
     }
     return ot;
 }
@@ -286,15 +281,14 @@ static void clearstack(forthmachine* fm) {
 /* Directives */
 
 /**
- * defineop reads a function identifier, followed by the commands to run when the function
+ * optable_defineop reads a function identifier, followed by the commands to run when the function
  *      is called, stopping when a semicolon is reached.
  *      Reading is done from the input string.
  *
  * returns new position of input index
  *
  */
-void defineop(forthmachine* fm, char *input, int* starti) {
-    optable* optable = fm->ot;
+void optable_defineop(optable* optable, char *input, int* starti) {
     // value easier to deal with (than pointer)
     int i = *starti;
     // name by which the function will be called
@@ -358,19 +352,29 @@ void defineop(forthmachine* fm, char *input, int* starti) {
     }
     stack_free(ifcounter);
 
-    // optable->optable bounds check 
-    if (optable->len >= OPTABLE_MAX_SIZE) {
-        // Error
-        fprintf(stderr, "Error: optable->optable reached max size, failed to create new user defined operation");
-        exit(1);
-    }
-    // add op to end of table, and increment size
-    optable->optable[optable->len].word = opcode;
-    optable->optable[optable->len].optype = compiled;
-    optable->optable[optable->len].oplist = oplist; 
-    optable->optable[optable->len].oplistlen = opsi;
-    optable->len++;
+    wordop* existingop = optable_getop(optable, opcode);
 
+    if (existingop) {
+        if (existingop->optype == compiled && existingop->oplist) {
+            free(existingop->oplist);
+        }
+        existingop->optype = compiled;
+        existingop->oplist = oplist;
+        existingop->oplistlen = opsi;
+    } else {
+        // optable->optable bounds check 
+        if (optable->len >= OPTABLE_MAX_SIZE) {
+            // Error
+            fprintf(stderr, "Error: optable->optable reached max size, failed to create new user defined operation");
+            exit(1);
+        }
+        // add op to end of table, and increment size
+        optable->optable[optable->len].word = opcode;
+        optable->optable[optable->len].optype = compiled;
+        optable->optable[optable->len].oplist = oplist; 
+        optable->optable[optable->len].oplistlen = opsi;
+        optable->len++;
+    }
     // move read position forwards
     *starti = i;
 }

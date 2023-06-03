@@ -45,7 +45,7 @@ static void op_exec(wordop* op, forthmachine* fm) {
 
 static void forthmachine_exec(forthmachine* fm, char *word, int len, char* line, int* i) {
     if (0 == strcmp(word, ":")) {
-        defineop(fm, line, i);
+        optable_defineop(fm->ot, line, i);
         return;
     }
     wordop* op = optable_getop(fm->ot, word);

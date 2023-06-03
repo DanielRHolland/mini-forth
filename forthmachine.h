@@ -65,7 +65,7 @@ struct optable {
  */
 wordop* optable_getop(optable* optable, char *word);
 
-void defineop(forthmachine* fm, char *input, int* starti);
+void optable_defineop(optable* optable, char *input, int* starti);
 
 optable* optable_new();
 
