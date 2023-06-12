@@ -62,32 +62,6 @@ const static wordop inittable[] = {
     {"i", optype_builtin, {lcsindex}},
 };
 
-
-static compileditem* optable_compilewords(optable* ot, int len, char** script) {
-    compileditem* oplist = malloc(sizeof(compileditem) * len);
-    for (int i = 0; i < len; i++) {
-        wordop* wordop = optable_getop(ot, script[i]);
-        if (wordop) {
-            oplist[i].type = compileditem_stackop;
-            oplist[i].wordop = wordop;
-        } else {
-            oplist[i].type = compileditem_literal;
-            oplist[i].literal = atoi(script[i]);
-        }
-    }
-    return oplist;
-}
-
-void optable_addop(optable* ot, char* name, int len, char** words) {
-    ot->optable[ot->len].word = malloc(sizeof(name));
-    strcpy(ot->optable[ot->len].word, name);
-    ot->optable[ot->len].optype = optype_compiled;
-    ot->optable[ot->len].oplistlen = len;
-    compileditem* oplist = optable_compilewords(ot, len, words);
-    ot->optable[ot->len].oplist = oplist;
-    ot->len++;
-}
-
 optable* optable_new(errorhandler errorhandler) {
     optable* ot = malloc(sizeof(optable));
     ot->optable = malloc(sizeof(wordop) * OPTABLE_MAX_SIZE);
